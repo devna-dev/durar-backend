@@ -74,7 +74,7 @@ makemessages:
 	docker-compose run --rm web python manage.py makemessages
 
 generate_swagger:
-	docker-compose run --rm web python manage.py generate_swagger
+	docker-compose run --rm web python manage.py generateschema
 
 silk_clear_request_log:
 	docker-compose run --rm web python manage.py silk_clear_request_log

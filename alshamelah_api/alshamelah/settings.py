@@ -13,8 +13,11 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import sys
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SITE_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(os.path.join(SITE_ROOT, 'apps'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
@@ -26,7 +29,6 @@ DEBUG = int(os.environ.get("DEBUG", default=0))
 # 'DJANGO_ALLOWED_HOSTS' should be a single string of hosts with a space between each.
 # For example: 'DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]'
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
-
 
 # Application definition
 
@@ -43,20 +45,24 @@ BASE_INSTALLED_APPS = [
 ]
 
 INSTALLED_APPS = [
-    # Third-party
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'rest_auth',
-    'rest_auth.registration',
-    'crispy_forms',
-    'debug_toolbar',
-    'rest_framework_swagger',
+                     # Third-party
+                     'allauth',
+                     'allauth.account',
+                     'allauth.socialaccount',
+                     'rest_auth',
+                     'rest_auth.registration',
+                     'crispy_forms',
+                     'debug_toolbar',
+                     # 'rest_framework_swagger',
+                     'drf_yasg',
+                     'rolepermissions',
 
-    # Local
-    'apps.users',
-    'apps.pages',
-] + BASE_INSTALLED_APPS
+                     # Local
+                     'apps.pages',
+                     'apps.categories',
+                     'apps.books',
+                     'apps.users',
+                 ] + BASE_INSTALLED_APPS
 
 SITE_ID = 1
 REST_USE_JWT = True
@@ -81,6 +87,10 @@ REST_FRAMEWORK = {
         # 'rest_framework.authentication.SessionAuthentication',
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
     ),
@@ -99,8 +109,14 @@ REST_REGISTRATION = {
     'VERIFICATION_FROM_EMAIL': 'no-reply@example.com',
 }
 
+EMAIL_VERIFICATION = True
+
 REST_AUTH_SERIALIZERS = {
     'LOGIN_SERIALIZER': 'apps.users.serializers.LoginSerializer',
+    'USER_DETAILS_SERIALIZER': 'apps.users.serializers.UserSerializer',
+}
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'apps.users.serializers.RegisterSerializer',
 }
 
 SWAGGER_SETTINGS = {
@@ -131,7 +147,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'alshamelah.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
@@ -145,7 +160,6 @@ DATABASES = {
         "PORT": os.environ.get("SQL_PORT", "5432"),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -165,7 +179,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
@@ -181,8 +194,12 @@ USE_TZ = True
 
 # CUSTOM USER MODEL CONFIGS
 # ------------------------------------------------------------------------------
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = 'users.User'
 
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+)
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
@@ -204,11 +221,6 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 
 MEDIA_URL = "/mediafiles/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
-
-AUTHENTICATION_BACKENDS = (
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-)
 
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False

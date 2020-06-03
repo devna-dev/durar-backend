@@ -1,11 +1,10 @@
 version: '3.7'
-
 services:
   web:
     build: ./alshamelah_api
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - ./alshamelah_api/:/usr/src/app/
+      - ./alshamelah_api:/usr/src/app
     ports:
       - 8000:8000
     env_file:
@@ -13,9 +12,11 @@ services:
     depends_on:
       - db
   db:
-    image: postgres:12.0-alpine
+    build:
+      context: ./compose/postgres
+    image: postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - db-data:/var/lib/postgresql/data:z
     environment:
       - POSTGRES_USER=alshamelah_admin
       - POSTGRES_PASSWORD=Sy3aZdxGyQ8KWEtK
@@ -24,4 +25,4 @@ services:
       - 5435:5432
 
 volumes:
-  postgres_data:
+  db-data:
