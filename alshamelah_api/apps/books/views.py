@@ -2,6 +2,7 @@ from rest_framework import viewsets
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from .models import Book, BookMark, BookRating, BookComment, BookHighlight, BookAudio, BookPDF
+from .permissions import CanManageBook
 from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, BookAudioSerializer, \
     BookCommentSerializer, \
     BookHighlightSerializer, BookRatingSerializer
@@ -10,6 +11,10 @@ from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, 
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
+    filter_fields = ('user',)
+    permission_classes = (
+        CanManageBook,
+    )
 
 
 class BookMarkViewSet(NestedViewSetMixin, viewsets.ModelViewSet):

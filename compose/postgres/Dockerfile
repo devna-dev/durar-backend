@@ -1,4 +1,4 @@
-FROM mdillon/postgis:9.5
+FROM postgres:12.0-alpine
 
 COPY ./postgresql.conf /etc/postgres/postgresql.conf
 COPY ./backup.sh /usr/local/bin/backup

@@ -106,14 +106,19 @@ REST_REGISTRATION = {
     'RESET_PASSWORD_VERIFICATION_URL': 'https://frontend-host/reset-password/',
     'REGISTER_EMAIL_VERIFICATION_URL': 'https://frontend-host/verify-email/',
 
-    'VERIFICATION_FROM_EMAIL': 'no-reply@example.com',
+    'VERIFICATION_FROM_EMAIL': 'al-shamelah@internet-svc.com',
 }
 
 EMAIL_VERIFICATION = True
 
+ROLEPERMISSIONS_MODULE = 'apps.users.roles'
+
 REST_AUTH_SERIALIZERS = {
     'LOGIN_SERIALIZER': 'apps.users.serializers.LoginSerializer',
     'USER_DETAILS_SERIALIZER': 'apps.users.serializers.UserSerializer',
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
 }
 REST_AUTH_REGISTER_SERIALIZERS = {
     'REGISTER_SERIALIZER': 'apps.users.serializers.RegisterSerializer',
@@ -231,6 +236,7 @@ ACCOUNT_UNIQUE_EMAIL = True
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_USE_TLS = False
 EMAIL_HOST = 'mail.internet-svc.com'
-EMAIL_HOST_USER = 'admin@internet-svc.com'
-EMAIL_HOST_PASSWORD = 'yugi_012'
+EMAIL_HOST_USER = 'al-shamelah@internet-svc.com'
+EMAIL_HOST_PASSWORD = 'J*Pb4ATyb4@_KCn8'
 EMAIL_PORT = 25
+DEFAULT_FROM_EMAIL = 'al-shamelah@internet-svc.com'
