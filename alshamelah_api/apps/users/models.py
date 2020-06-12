@@ -1,15 +1,19 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from model_utils import Choices
+
+from .enums import OTPTypes
+from .managers import EmailOTPManager, PhoneOTPManager
 
 
 class User(AbstractUser):
-    GENDER_CHOICES = (
+    GENDER_CHOICES = Choices(
         ('M', _(u'Male')),
         ('F', _(u'Female')),
     )
 
-    MEMBERSHIP_CHOICES = (
+    MEMBERSHIP_CHOICES = Choices(
         ('N', _(u'New')),
         ('A', _(u'Active')),
         ('G', _(u'Golden')),
@@ -34,3 +38,30 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class OTP(models.Model):
+    TYPE_CHOICES = Choices(
+        (OTPTypes.Email, _(u'Email')),
+        (OTPTypes.Phone, _(u'Phone')),
+    )
+    user = models.ForeignKey(User, related_name='otps', verbose_name=_(u'OTP'), on_delete=models.CASCADE)
+    code = models.CharField(max_length=6, verbose_name=_(u'Code'), null=False)
+    type = models.CharField(choices=TYPE_CHOICES, max_length=2, verbose_name=_(u'Gender'))
+    creation_time = models.DateTimeField(auto_now_add=True, null=True)
+    last_update_time = models.DateTimeField(auto_now=True, null=True)
+    verified = models.BooleanField(verbose_name=_(u'Verified'))
+
+
+class EmailOTP(OTP):
+    objects = EmailOTPManager()
+
+    class Meta:
+        proxy = True
+
+
+class PhoneOTP(OTP):
+    objects = PhoneOTPManager()
+
+    class Meta:
+        proxy = True

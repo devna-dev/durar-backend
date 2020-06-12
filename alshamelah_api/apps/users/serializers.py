@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth.hashers import make_password
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
 
@@ -21,6 +23,13 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserModel
         fields = ['id', 'email', 'name', 'birthdate', 'phone', 'gender', 'country', 'address', 'photo']
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = super().create(validated_data)
+        user.set_password(make_password(password))
+        user.save()
+        return user
 
 
 class LoginSerializer(serializers.Serializer):
@@ -145,6 +154,7 @@ class RegisterSerializer(serializers.Serializer):
     def validate(self, data):
         if data['password'] != data['passwordConfirm']:
             raise serializers.ValidationError(_("The two password fields didn't match."))
+        data['password1'] = data['password']
         return data
 
     def custom_signup(self, request, user):
@@ -154,6 +164,7 @@ class RegisterSerializer(serializers.Serializer):
         return {
             'name': self.validated_data.get('name', ''),
             'password': self.validated_data.get('password', ''),
+            'password1': self.validated_data.get('password', ''),
             'email': self.validated_data.get('email', '')
         }
 
@@ -161,7 +172,10 @@ class RegisterSerializer(serializers.Serializer):
         adapter = get_adapter()
         user = adapter.new_user(request)
         self.cleaned_data = self.get_cleaned_data()
+
         adapter.save_user(request, user, self)
         self.custom_signup(request, user)
+
         setup_user_email(request, user, [])
+
         return user

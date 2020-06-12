@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from .models import Book, BookMark, BookRating, BookComment, BookHighlight, BookAudio, BookPDF
@@ -6,6 +7,7 @@ from .permissions import CanManageBook
 from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, BookAudioSerializer, \
     BookCommentSerializer, \
     BookHighlightSerializer, BookRatingSerializer
+from ..users.models import EmailOTP
 
 
 class BookViewSet(viewsets.ModelViewSet):
@@ -15,6 +17,16 @@ class BookViewSet(viewsets.ModelViewSet):
     permission_classes = (
         CanManageBook,
     )
+
+    def list(self, request, **kwargs):
+        serializer = BookSerializer(self.queryset, many=True)
+        if request.user and request.user.id:
+            print(request.user.id)
+            print(EmailOTP.objects.generate(request.user.id))
+            print(EmailOTP.objects.verify(request.user.id, '288092', 360))
+            print(EmailOTP.objects.verify(request.user.id, '288092', 2))
+            print(EmailOTP.objects.verify(request.user.id, '288092', 2))
+        return Response(serializer.data)
 
 
 class BookMarkViewSet(NestedViewSetMixin, viewsets.ModelViewSet):

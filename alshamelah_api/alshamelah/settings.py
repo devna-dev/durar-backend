@@ -66,6 +66,7 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 REST_USE_JWT = True
+REST_SESSION_LOGIN = False
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -88,8 +89,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -99,9 +101,9 @@ REST_FRAMEWORK = {
     # 'PAGE_SIZE': 20
 }
 REST_REGISTRATION = {
-    'REGISTER_VERIFICATION_ENABLED': False,
+    'REGISTER_VERIFICATION_ENABLED': True,
     'RESET_PASSWORD_VERIFICATION_ENABLED': True,
-    'REGISTER_EMAIL_VERIFICATION_ENABLED': True,
+    'REGISTER_EMAIL_VERIFICATION_ENABLED': False,
     # 'REGISTER_VERIFICATION_URL': 'https://frontend-host/verify-user/',
     'RESET_PASSWORD_VERIFICATION_URL': 'https://frontend-host/reset-password/',
     'REGISTER_EMAIL_VERIFICATION_URL': 'https://frontend-host/verify-email/',
@@ -109,7 +111,10 @@ REST_REGISTRATION = {
     'VERIFICATION_FROM_EMAIL': 'al-shamelah@internet-svc.com',
 }
 
-EMAIL_VERIFICATION = True
+EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_ADAPTER = 'apps.users.adapter.UserAdapter'
+EMAIL_OTP_EXPIRY = 60 * 60
+PHONE_OTP_EXPIRY = 60 * 5
 
 ROLEPERMISSIONS_MODULE = 'apps.users.roles'
 
@@ -122,6 +127,9 @@ REST_AUTH_SERIALIZERS = {
 }
 REST_AUTH_REGISTER_SERIALIZERS = {
     'REGISTER_SERIALIZER': 'apps.users.serializers.RegisterSerializer',
+}
+JWT_AUTH = {
+    'JWT_AUTH_HEADER_PREFIX': 'Bearer',
 }
 
 SWAGGER_SETTINGS = {

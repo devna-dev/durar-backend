@@ -1,6 +1,7 @@
 from django.contrib.postgres.forms import JSONField
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from model_utils import Choices
 
 from .managers import BookAudioManager, BookPDFManager
 
@@ -83,7 +84,7 @@ class BookHighlight(models.Model):
 
 
 class BookMedia(models.Model):
-    MEDIA_CHOICES = (
+    MEDIA_CHOICES = Choices(
         ('audio', _(u'Audio')),
         ('pdf', _(u'PDF')),
     )
