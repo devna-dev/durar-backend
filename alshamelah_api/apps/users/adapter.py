@@ -1,16 +1,21 @@
 from allauth.account.adapter import DefaultAccountAdapter
+from django.contrib.sites.shortcuts import get_current_site
+
+from .models import EmailOTP
 
 
 class UserAdapter(DefaultAccountAdapter):
 
     def send_confirmation_mail(self, request, emailconfirmation, signup):
-        activate_url = self.get_email_confirmation_url(
-            request,
-            emailconfirmation)
+        current_site = get_current_site(request)
+        # activate_url = self.get_email_confirmation_url(
+        #     request,
+        #     emailconfirmation)
+        otp = EmailOTP.objects.generate(emailconfirmation.email_address.user.id)
         ctx = {
             "user": emailconfirmation.email_address.user,
-            "activate_url": activate_url,
-            "key": emailconfirmation.key,
+            "current_site": current_site,
+            "key": otp.code,
         }
         if signup:
             email_template = 'account/email/email_confirmation_signup'

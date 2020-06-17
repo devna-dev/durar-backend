@@ -1,0 +1,8 @@
+{% load account %}{% user_display user as user_display %}{% load i18n %}{% autoescape off %}
+    {% blocktrans with site_name=current_site.name site_domain=current_site.domain %}
+        Hi {{ user_display }},<br>
+        To confirm your email address please enter this code into the app: <strong>{{ key }}</strong><br><br>
+    {% endblocktrans %}
+    {% blocktrans with site_name=current_site.name site_domain=current_site.domain %}Thank you!
+    {% endblocktrans %}
+{% endautoescape %}

@@ -1,10 +1,13 @@
+from allauth.account.models import EmailAddress
 from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.hashers import make_password
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
+from rolepermissions.roles import assign_role
 
 # Get the UserModel
+
 UserModel = get_user_model()
 try:
     from allauth.account import app_settings as allauth_settings
@@ -20,16 +23,26 @@ except ImportError:
 
 
 class UserSerializer(serializers.ModelSerializer):
+    email_verified = serializers.SerializerMethodField('is_email_verified')
+
     class Meta:
         model = UserModel
-        fields = ['id', 'email', 'name', 'birthdate', 'phone', 'gender', 'country', 'address', 'photo']
+        fields = ['id', 'email', 'name', 'birthday', 'phone', 'phone_code', 'gender', 'country', 'address', 'photo',
+                  'email_verified', 'phone_verified']
 
     def create(self, validated_data):
         password = validated_data.pop('password')
         user = super().create(validated_data)
         user.set_password(make_password(password))
         user.save()
+        assign_role(user, 'user')
         return user
+
+    def is_email_verified(self, user):
+        if user and user.id:
+            email = EmailAddress.objects.filter(user_id=user.id, email=user.email).first()
+            if email and email.verified: return True
+        return False
 
 
 class LoginSerializer(serializers.Serializer):
@@ -177,5 +190,6 @@ class RegisterSerializer(serializers.Serializer):
         self.custom_signup(request, user)
 
         setup_user_email(request, user, [])
+        assign_role(user, 'user')
 
         return user

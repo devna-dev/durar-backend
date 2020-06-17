@@ -7,13 +7,16 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework.permissions import AllowAny
 
+from .swagger_api_generator import SwaggerAPISchemaGenerator
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('accounts/', include('allauth.urls')),
 ]
 
 api_v1_urls = [
-    path('users/', include('django.contrib.auth.urls')),
+    url(r'^users/', include('django.contrib.auth.urls')),
+    url(r'^accounts/', include('apps.users.urls')),
     url(r'^accounts/', include('rest_auth.urls')),
     url(r'^accounts/registration/', include('rest_auth.registration.urls')),
     path('', include('apps.categories.urls')),
@@ -38,12 +41,14 @@ schema_view = get_schema_view(
     public=True,
     permission_classes=(AllowAny,),
     patterns=urlpatterns,
+    generator_class=SwaggerAPISchemaGenerator
 )
 
 urlpatterns += [
     url(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     url(r'^$', schema_view.with_ui('swagger', cache_timeout=None), name='schema-swagger-ui'),
     url(r'^api-docs/$', schema_view.with_ui('redoc', cache_timeout=None), name='schema-redoc'),
+    # url(r'', name='home')
 
 ]
 if bool(settings.DEBUG):

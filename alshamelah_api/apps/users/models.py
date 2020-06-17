@@ -21,10 +21,13 @@ class User(AbstractUser):
     )
 
     name = models.CharField(max_length=50, verbose_name=_(u'Name'), null=True, blank=True)
+    phone_code = models.CharField(max_length=50, verbose_name=_(u'Phone code'),
+                                  blank=True, null=True)
     phone = models.CharField(max_length=50, verbose_name=_(u'Phone number'),
                              blank=True, null=True)
-    birthdate = models.DateField(null=True, blank=True,
-                                 verbose_name=_(u'Birth date'))
+    phone_verified = models.BooleanField(verbose_name=_(u'Phone Verified'), default=False)
+    birthday = models.DateField(null=True, blank=True,
+                                verbose_name=_(u'Birth date'))
     gender = models.CharField(choices=GENDER_CHOICES, max_length=1, null=True,
                               blank=True, verbose_name=_(u'Gender'))
     membership = models.CharField(choices=MEMBERSHIP_CHOICES, max_length=1, null=True,

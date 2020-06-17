@@ -8,8 +8,8 @@ services:
     volumes:
       - ./alshamelah_api:/usr/src/app
     ports:
-      - 8000:8000
-      - 25:25
+      - "8000:8000"
+      - "25:25"
     env_file:
       - ./.env.dev
     depends_on:

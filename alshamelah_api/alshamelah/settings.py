@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/2.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
-
+import datetime
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -44,27 +44,29 @@ BASE_INSTALLED_APPS = [
     'rest_framework.authtoken',
 ]
 
-INSTALLED_APPS = [
-                     # Third-party
-                     'allauth',
-                     'allauth.account',
-                     'allauth.socialaccount',
-                     'rest_auth',
-                     'rest_auth.registration',
-                     'crispy_forms',
-                     'debug_toolbar',
-                     # 'rest_framework_swagger',
-                     'drf_yasg',
-                     'rolepermissions',
+INSTALLED_APPS = BASE_INSTALLED_APPS + [
+    # Third-party
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'rest_auth',
+    'rest_auth.registration',
+    'crispy_forms',
+    'debug_toolbar',
+    'rolepermissions',
+    # 'rest_framework_swagger',
+    'drf_yasg',
 
-                     # Local
-                     'apps.pages',
-                     'apps.categories',
-                     'apps.books',
-                     'apps.users',
-                 ] + BASE_INSTALLED_APPS
+    # Local
+    'apps.categories',
+    'apps.books',
+    'apps.users',
+]
 
 SITE_ID = 1
+SITE_NAME = 'Al-Shamelah App'
+SITE_DOMAIN = 'Al-Shamelah.com'
+
 REST_USE_JWT = True
 REST_SESSION_LOGIN = False
 
@@ -103,7 +105,7 @@ REST_FRAMEWORK = {
 REST_REGISTRATION = {
     'REGISTER_VERIFICATION_ENABLED': True,
     'RESET_PASSWORD_VERIFICATION_ENABLED': True,
-    'REGISTER_EMAIL_VERIFICATION_ENABLED': False,
+    'REGISTER_EMAIL_VERIFICATION_ENABLED': True,
     # 'REGISTER_VERIFICATION_URL': 'https://frontend-host/verify-user/',
     'RESET_PASSWORD_VERIFICATION_URL': 'https://frontend-host/reset-password/',
     'REGISTER_EMAIL_VERIFICATION_URL': 'https://frontend-host/verify-email/',
@@ -111,12 +113,17 @@ REST_REGISTRATION = {
     'VERIFICATION_FROM_EMAIL': 'al-shamelah@internet-svc.com',
 }
 
-EMAIL_VERIFICATION = 'mandatory'
+EMAIL_VERIFICATION = 'optional'
 ACCOUNT_ADAPTER = 'apps.users.adapter.UserAdapter'
 EMAIL_OTP_EXPIRY = 60 * 60
 PHONE_OTP_EXPIRY = 60 * 5
 
+# CUSTOM USER MODEL CONFIGS
+# ------------------------------------------------------------------------------
+AUTH_USER_MODEL = 'users.User'
+
 ROLEPERMISSIONS_MODULE = 'apps.users.roles'
+# ROLEPERMISSIONS_REGISTER_ADMIN = True
 
 REST_AUTH_SERIALIZERS = {
     'LOGIN_SERIALIZER': 'apps.users.serializers.LoginSerializer',
@@ -130,14 +137,22 @@ REST_AUTH_REGISTER_SERIALIZERS = {
 }
 JWT_AUTH = {
     'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(hours=12)
 }
-
+ACCOUNT_LOGOUT_ON_GET = False
 SWAGGER_SETTINGS = {
-    'exclude_url_names': [],
-    'exclude_namespaces': [],
+    'USE_SESSION_AUTH': False,
+    'EXCLUDE_URL_NAMES': ['rest_verify_email', 'rest_logout'],
     'api_version': '1',
     'relative_paths': True,
     'doc_expansion': 'none',
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    }
 }
 
 ROOT_URLCONF = 'alshamelah.urls'
@@ -205,9 +220,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-# CUSTOM USER MODEL CONFIGS
-# ------------------------------------------------------------------------------
-AUTH_USER_MODEL = 'users.User'
 
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
@@ -246,5 +258,5 @@ EMAIL_USE_TLS = False
 EMAIL_HOST = 'mail.internet-svc.com'
 EMAIL_HOST_USER = 'al-shamelah@internet-svc.com'
 EMAIL_HOST_PASSWORD = 'J*Pb4ATyb4@_KCn8'
-EMAIL_PORT = 25
+EMAIL_PORT = 8889
 DEFAULT_FROM_EMAIL = 'al-shamelah@internet-svc.com'

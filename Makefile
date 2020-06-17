@@ -52,9 +52,6 @@ debug:
 init_data:
 	docker-compose run --rm web python manage.py generate_initial_data
 
-superadmin:
-	docker-compose run --rm web python manage.py createsuperuser
-
 psql:
 	docker-compose run --rm db run_psql
 
@@ -88,3 +85,11 @@ down:
 site-debug:
 	docker-compose run --service-ports -d web; docker-compose up web
 
+create-admin:
+	docker-compose run web python manage.py createsuperuser --username admin --email admin@al-shamelah.com
+
+reset-roles:
+	docker-compose run web python manage.py sync_roles --reset_user_permissions
+
+flush-data:
+	docker-compose run web python manage.py flush --no-input

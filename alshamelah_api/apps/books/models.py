@@ -1,4 +1,4 @@
-from django.contrib.postgres.forms import JSONField
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
@@ -11,6 +11,7 @@ class Book(models.Model):
     content = models.TextField(verbose_name=_(u'Content'), null=False, blank=False)
     data = JSONField()
     author = models.CharField(max_length=1000, verbose_name=_(u'Author'), null=False, blank=False)
+    author_id = models.PositiveIntegerField(blank=True, null=True, verbose_name=_(u'Author Id'))
     uploader = models.ForeignKey('users.User', related_name='books', verbose_name=_(u'Uploader'), null=True,
                                  on_delete=models.SET_NULL)
     category = models.ForeignKey('categories.Category', related_name='books', verbose_name=_(u'Category'), null=True,
@@ -18,8 +19,8 @@ class Book(models.Model):
     sub_category = models.ForeignKey('categories.SubCategory', related_name='books', verbose_name=_(u'Sub Category'),
                                      null=True,
                                      on_delete=models.SET_NULL)
-    has_audio = models.BooleanField(verbose_name=_(u'Has Audio'))
-    approved = models.BooleanField(verbose_name=_(u'Approved'))
+    has_audio = models.BooleanField(verbose_name=_(u'Has Audio'), default=False)
+    approved = models.BooleanField(verbose_name=_(u'Approved'), default=False)
     creation_time = models.DateTimeField(auto_now_add=True, null=True)
     last_update_time = models.DateTimeField(auto_now=True, null=True)
     publish_date = models.DateField(null=True, blank=True, verbose_name=_(u'Publish Date'))
@@ -34,11 +35,19 @@ class Book(models.Model):
 
 
 class BookRating(models.Model):
+    RATING_RANGE = (
+        (1, '1'),
+        (2, '2'),
+        (3, '3'),
+        (4, '4'),
+        (5, '5')
+    )
+
     user = models.ForeignKey('users.User', related_name='book_ratings', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='book_ratings', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
-    rating = models.PositiveSmallIntegerField(verbose_name=_(u'Rating'))
+    rating = models.PositiveSmallIntegerField(verbose_name=_(u'Rating'), choices=RATING_RANGE)
 
     def __str__(self):
         return self.rating
