@@ -13,13 +13,16 @@ class AppPermissions(object):
     create_book_audio = 'create_book_audio'
     create_book_pdf = 'create_book_pdf'
     create_book_rating = 'create_book_ratings'
+    create_book_review = 'create_book_review'
     edit_book_comment = 'edit_book_comments'
     edit_book_mark = 'edit_book_marks'
     edit_book_highlight = 'edit_book_highlights'
     edit_book_audio = 'edit_book_audio'
     edit_book_pdf = 'edit_book_pdf'
     edit_book_rating = 'edit_book_ratings'
+    edit_book_review = 'edit_book_review'
     view_book_comments = 'view_book_comments'
+    view_book_review = 'view_book_review'
     view_books = 'view_books'
     view_book_marks = 'view_book_marks'
     view_book_highlights = 'view_book_highlights'
@@ -32,6 +35,7 @@ class AppPermissions(object):
     delete_book_audio = 'delete_book_audio'
     delete_book_pdf = 'delete_book_pdf'
     delete_book_rating = 'delete_book_ratings'
+    delete_book_review = 'delete_book_review'
     edit_password = 'edit_password'
     verify_email = 'verify_email'
     verify_phone = 'verify_phone'
@@ -55,12 +59,14 @@ class User(AbstractUserRole):
         AppPermissions.create_book_audio: True,
         AppPermissions.create_book_pdf: True,
         AppPermissions.create_book_rating: True,
+        AppPermissions.create_book_review: True,
         AppPermissions.edit_book_comment: True,
         AppPermissions.edit_book_mark: True,
         AppPermissions.edit_book_highlight: True,
         AppPermissions.edit_book_audio: True,
         AppPermissions.edit_book_pdf: True,
         AppPermissions.edit_book_rating: True,
+        AppPermissions.edit_book_review: True,
         AppPermissions.view_book_comments: True,
         AppPermissions.view_book_marks: True,
         AppPermissions.view_book_highlights: True,
@@ -73,6 +79,7 @@ class User(AbstractUserRole):
         AppPermissions.delete_book_audio: True,
         AppPermissions.delete_book_pdf: True,
         AppPermissions.delete_book_rating: True,
+        AppPermissions.delete_book_review: True,
         AppPermissions.edit_password: True,
         AppPermissions.verify_email: True,
         AppPermissions.verify_phone: True,

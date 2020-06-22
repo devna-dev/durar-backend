@@ -1,4 +1,4 @@
-Django==3.0.6
+Django==3.0.7
 pyyaml==5.3.1
 PyArabic==0.6.7
 # for pdf generation with arabic support
@@ -17,6 +17,7 @@ django-role-permissions==3.0.0
 django-coreapi==2.3.0
 django-filter==2.2.0
 django-model-utils==4.0.0
+django-extensions==2.2.9
 #django-rest-swagger==2.2.0
 drf-yasg==1.17.1
 drf-nested-routers==0.91.0
@@ -29,3 +30,6 @@ postgres==3.0.0
 gunicorn==19.9.0
 psycopg2-binary==2.8.3
 munch==2.5.0
+coreapi==2.3.3
+easy-thumbnails==2.7
+django-cleanup==5.0.0

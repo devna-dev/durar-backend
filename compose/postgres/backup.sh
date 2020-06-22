@@ -19,6 +19,6 @@ echo "---------------"
 
 FILENAME=backup_$(date +'%Y_%m_%dT%H_%M_%S').sql.gz
 # pg_dump -h postgres -U $POSTGRES_USER $POSTGRES_DB| gzip > /backups/$FILENAME
-pg_dump -h postgres -U $POSTGRES_USER $POSTGRES_DB -Z 5 >/backups/$FILENAME
+pg_dump -h db -U $POSTGRES_USER $POSTGRES_DB -Z 5 >/backups/$FILENAME
 
 echo "successfully created backup $FILENAME"

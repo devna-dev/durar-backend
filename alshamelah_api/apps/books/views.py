@@ -1,21 +1,181 @@
-from rest_framework import viewsets, status
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+import coreapi
+import coreschema
+import django_filters
+from django.db.models import Avg
+from django.utils.encoding import force_str
+from django.utils.translation import ugettext_lazy as _
+from django_filters.rest_framework import DjangoFilterBackend
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from pyarabic.araby import strip_tashkeel
+from rest_framework import viewsets, status, views
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from .models import Book, BookMark, BookComment, BookHighlight, BookAudio, BookPDF
 from .permissions import CanManageBook, CanSubmitBook, CanManageBookMark, CanManageBookRating, CanManageBookAudio, \
-    CanManageBookComment, CanManageBookHighlight, CanManageBookPdf
+    CanManageBookComment, CanManageBookHighlight, CanManageBookPdf, CanManageBookReview
 from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, BookAudioSerializer, \
     BookCommentSerializer, \
-    BookHighlightSerializer, BookRatingSerializer, UploadBookSerializer, BookListSerializer, SubmitBookSerializer
+    BookHighlightSerializer, BookRatingSerializer, UploadBookSerializer, BookListSerializer, SubmitBookSerializer, \
+    BookReviewSerializer
+from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
+
+
+class BookFilter(django_filters.FilterSet):
+    category = django_filters.NumberFilter()
+    author = django_filters.CharFilter(lookup_expr='unaccent__icontains')
+    title = django_filters.CharFilter(lookup_expr='unaccent__icontains')
+    content = django_filters.CharFilter(lookup_expr='icontains')
+
+    class Meta:
+        model = Book
+        fields = ['category', 'author', 'title', 'content']
+
+
+class BooksFilterBackend(DjangoFilterBackend):
+    category_query_param = 'category'
+    category_query_description = _('Filter books by category id')
+    author_query_param = 'author'
+    author_query_description = _('Filter books by author')
+    title_query_param = 'title'
+    title_query_description = _('Filter books which contains this title')
+    content_query_param = 'content'
+    content_query_description = _('Filter books which contains this content')
+    sort_query_param = 'sort'
+    sort_query_description = _('Sort books by (publish_date, )')
+
+    def get_schema_fields(self, view):
+        fields = [
+            coreapi.Field(
+                name=self.category_query_param,
+                required=False,
+                location='query',
+                schema=coreschema.Integer(
+                    title='Category',
+                    description=force_str(self.category_query_description)
+                )
+            ),
+            coreapi.Field(
+                name=self.title_query_param,
+                required=False,
+                location='query',
+                schema=coreschema.String(
+                    title='Title',
+                    description=force_str(self.title_query_description)
+                )
+            ),
+            coreapi.Field(
+                name=self.content_query_param,
+                required=False,
+                location='query',
+                schema=coreschema.String(
+                    title='Title',
+                    description=force_str(self.category_query_description)
+                )
+            ),
+            coreapi.Field(
+                name=self.sort_query_param,
+                required=False,
+                location='query',
+                schema=coreschema.Enum(
+                    title='Sort by',
+                    description=force_str(self.sort_query_description),
+                    enum=['publish_date', 'add_date', 'author', 'has_audio', 'pages', 'downloads', 'reads', 'rate']
+                )
+            )
+        ]
+        return fields
+
+    def get_schema_operation_parameters(self, view):
+        parameters = [
+            {
+                'name': self.category_query_param,
+                'required': False,
+                'in': 'query',
+                'description': force_str(self.category_query_description),
+                'schema': {
+                    'type': 'integer',
+                },
+            }, {
+                'name': self.author_query_param,
+                'required': False,
+                'in': 'query',
+                'description': force_str(self.author_query_description),
+                'schema': {
+                    'type': 'string',
+                },
+            }, {
+                'name': self.title_query_param,
+                'required': False,
+                'in': 'query',
+                'description': force_str(self.title_query_description),
+                'schema': {
+                    'type': 'string',
+                },
+            }, {
+                'name': self.content_query_param,
+                'required': False,
+                'in': 'query',
+                'description': force_str(self.content_query_description),
+                'schema': {
+                    'type': 'string',
+                },
+            }, {
+                'name': self.sort_query_param,
+                'required': False,
+                'in': 'query',
+                'description': force_str(self.sort_query_description),
+                'schema': {
+                    'type': 'string',
+                },
+            }
+        ]
+        return parameters
+
+
+BookParameters = [openapi.Parameter('tashkeel', openapi.IN_QUERY, description="View with tashkeel", required=False,
+                                    type=openapi.TYPE_BOOLEAN), ]
+
+BookPageParameters = [openapi.Parameter('tashkeel', openapi.IN_QUERY, description="View with tashkeel", required=False,
+                                        type=openapi.TYPE_BOOLEAN),
+                      openapi.Parameter('page', openapi.IN_QUERY, description="Get page", required=False,
+                                        type=openapi.TYPE_INTEGER, default=None), ]
 
 
 class BookViewSet(viewsets.ModelViewSet):
-    queryset = Book.objects.all().prefetch_related('category', 'book_ratings')
-    filter_fields = ('user',)
+    queryset = Book.objects.filter(approved=True).prefetch_related('category', 'book_ratings')
     permission_classes = (CanManageBook,)
+    filterset_class = BookFilter
+    filter_backends = (BooksFilterBackend,)
+    parser_classes = [MultiPartParser]
+
+    @property
+    def pagination_class(self):
+        if 'offset' in self.request.query_params:
+            return CustomLimitOffsetPagination
+        else:
+            return CustomPageNumberPagination
+
+    def filter_queryset(self, queryset):
+        ordering = self.request.query_params.get('sort', 'author')
+        if self.request.user.is_superuser:
+            queryset = Book.objects.all().prefetch_related('category', 'book_ratings')
+        queryset = super(BookViewSet, self).filter_queryset(queryset)
+        if ordering == 'rate':
+            return queryset.annotate(avg_rate=Avg('book_ratings__rating')).order_by('avg_rate')
+        if ordering == 'add_date':
+            ordering = 'creation_time'
+        if ordering in ['pages', 'downloads', 'reads']:
+            ordering = ordering + 's_count'
+        return queryset.order_by(ordering)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -25,6 +185,37 @@ class BookViewSet(viewsets.ModelViewSet):
         if self.action == 'submit':
             return SubmitBookSerializer
         return BookSerializer
+
+    def list(self, request, *args, **kwargs):
+        request.encoding = 'utf-8'
+        return super(BookViewSet, self).list(request, args, kwargs)
+
+    @swagger_auto_schema(manual_parameters=BookParameters)
+    def retrieve(self, request, *args, **kwargs):
+        request.encoding = 'utf-8'
+        # Client can control the page using this query parameter.
+        book = self.get_object()
+        tashkeel = request.query_params.get('tashkeel', None) != 'false'
+        if not tashkeel:
+            book.content = strip_tashkeel(book.content)
+
+        serializer = self.get_serializer(book)
+
+        return Response(serializer.data)
+
+    @swagger_auto_schema(manual_parameters=BookPageParameters)
+    @action(detail=True, methods=['get'], permission_classes=[])
+    def view(self, request, pk=None):
+        book = self.get_object()
+        tashkeel = request.query_params.get('tashkeel', None) != 'false'
+        page = request.query_params.get('page', "1")
+        if page: page = int(page)
+        if not page or not book.pages or page > len(book.pages):
+            return Response(_('Page not found'), status=status.HTTP_400_BAD_REQUEST)
+        data = book.pages[page]['text']
+        if not tashkeel and data:
+            data = strip_tashkeel(data)
+        return Response(data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
     def submit(self, request, pk=None):
@@ -80,14 +271,14 @@ class BookHighlightViewSet(NestedBookViewSet):
 
 
 class BookAudioViewSet(NestedBookViewSet):
-    queryset = BookAudio.objects.all()
+    queryset = BookAudio.objects.filter(approved=True)
     serializer_class = BookAudioSerializer
     permission_classes = (CanManageBookAudio,)
     book_query = 'book'
 
 
 class BookPdfViewSet(NestedBookViewSet):
-    queryset = BookPDF.objects.all()
+    queryset = BookPDF.objects.filter(approved=True)
     serializer_class = BookPDFSerializer
     permission_classes = (CanManageBookPdf,)
     book_query = 'book'
@@ -97,3 +288,40 @@ class BookRatingViewSet(NestedBookViewSet):
     serializer_class = BookRatingSerializer
     permission_classes = (CanManageBookRating,)
     book_query = 'book'
+
+
+class BookReviewViewSet(NestedBookViewSet):
+    serializer_class = BookReviewSerializer
+    permission_classes = (CanManageBookReview,)
+    book_query = 'book'
+
+
+class Authours(views.APIView):
+    def get_object(self, queryset=None):
+        return self.queryset.none()
+
+    queryset = Book.objects.all().values_list('author', flat=True)
+
+    def get(self, *args, **kwargs):
+        data = list(filter(lambda a: a is not None and a != '', self.queryset.all()))
+        return Response(data,
+                        status=status.HTTP_200_OK)
+
+
+authors_view = Authours.as_view()
+
+
+class CategoryBooks(views.APIView):
+    def get_object(self, queryset=None):
+        return self.queryset.none()
+
+    queryset = Book.objects.filter(approved=True)
+
+    def get(self, *args, **kwargs):
+        data = self.queryset.filter(category_id=kwargs.pop('category_id'))
+        serializer = BookListSerializer(instance=data, many=True)
+        return Response(serializer.data,
+                        status=status.HTTP_200_OK)
+
+
+category_books_view = CategoryBooks.as_view()

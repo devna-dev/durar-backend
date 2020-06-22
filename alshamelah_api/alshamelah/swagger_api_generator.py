@@ -12,7 +12,6 @@ class SwaggerEndpointEnumerator(EndpointEnumerator):
         view = '{}.{}'.format(callback.__module__, callback.__qualname__)
         if url_name in settings.SWAGGER_SETTINGS['EXCLUDE_URL_NAMES']:
             return False
-
         return super().should_include_endpoint(
             path, callback, app_name, namespace, url_name
         )

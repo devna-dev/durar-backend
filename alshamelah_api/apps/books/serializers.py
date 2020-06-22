@@ -1,11 +1,12 @@
+import os
+
 from django.db.models import Avg
 from django.utils.translation import ugettext_lazy as _
 from munch import munchify
 from rest_framework import serializers
 from rest_framework.utils import json
 
-from .models import Book, BookMark, BookAudio, BookPDF, BookRating, BookComment, BookHighlight
-from ..categories.models import Category
+from .models import Book, BookMark, BookAudio, BookPDF, BookRating, BookComment, BookHighlight, BookReview
 from ..categories.serializers import CategorySerializer
 
 
@@ -34,19 +35,22 @@ class BookListSerializer(serializers.ModelSerializer):
 
 
 class UploadBookSerializer(serializers.ModelSerializer):
-    file = serializers.FileField(allow_empty_file=False, use_url=False, write_only=True)
+    file = serializers.FileField(allow_empty_file=False, use_url=False, required=False)
     uploader = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    pdf = serializers.FileField(use_url=False, required=False)
 
     class Meta:
         model = Book
         fields = '__all__'
-        read_only_fields = ['title', 'content', 'data', 'author', 'author_id', 'uploader', 'has_audio', 'category',
-                            'sub_category', 'approved', 'publish_date', 'read_count', 'download_count', 'page_count',
-                            'search_count']
-        extra_kwargs = {'title': {'required': False, 'allow_null': True},
+        read_only_fields = ['content', 'data', 'uploader', 'has_audio', 'approved', 'read_count',
+                            'download_count', 'page_count', 'search_count', 'author_id']
+        extra_kwargs = {'title': {'required': True},
                         'content': {'required': False, 'allow_null': True},
                         'data': {'required': False, 'allow_null': True},
-                        'author': {'required': False, 'allow_null': True}
+                        'author': {'required': True},
+                        'file': {'required': False, 'allow_null': True, 'read_only': False},
+                        'pdf': {'required': False, 'allow_null': True},
+                        'category': {'required': True},
                         }
 
     def __init__(self, **kwargs):
@@ -54,6 +58,74 @@ class UploadBookSerializer(serializers.ModelSerializer):
         super().__init__(**kwargs)
 
     def validate_file(self, file):
+        if not file:
+            return file
+        try:
+            self.json_data = json.load(file)
+        except:
+            raise serializers.ValidationError(_('Bad json file'))
+        return file
+
+    def validate_pdf(self, pdf):
+        if not pdf:
+            return pdf
+        filename, file_extension = os.path.splitext(pdf.name)
+        if not file_extension or file_extension.lower() != '.pdf':
+            raise serializers.ValidationError(_('Bad PDF file'))
+        return pdf
+
+    def get_data(self):
+        return munchify(self.json_data) if self.json_data else None
+
+    # def create(self, validated_data):
+    #     data = self.get_data()
+    #     category, category_created = Category.objects.get_or_create(name=data.meta.categories[0])
+    #     user = validated_data.get('uploader')
+    #     return Book.objects.create(title=data.meta.name, author_id=data.meta.author_id, content=self.json_data['pages'],
+    #                                data=self.json_data, category=category, uploader=user,
+    #                                page_count=len(self.json_data['pages']))
+    def create(self, validated_data):
+        data = validated_data
+        if self.json_data:
+            data['content'] = self.json_data['pages']
+            data['data'] = self.json_data
+            data['page_count'] = len(self.json_data['pages'])
+        if data.__contains__('file'):
+            data.pop('file')
+        pdf = None
+        if data.__contains__('pdf'):
+            pdf = data.pop('pdf')
+        book = Book.objects.create(**data)
+        if pdf:
+            BookPDF.objects.update_or_create(book_id=book.id, user=book.uploader, url=pdf)
+        return book
+
+
+class BookSerializer(serializers.ModelSerializer):
+    file = serializers.FileField(allow_empty_file=False, use_url=False, write_only=True)
+    pdf = serializers.FileField(use_url=False, write_only=True)
+    uploader = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = Book
+        fields = '__all__'
+        list_serializer_class = BookListSerializer
+
+    read_only_fields = ['content', 'data', 'uploader', 'has_audio', 'approved', 'read_count',
+                        'download_count', 'page_count', 'search_count']
+    extra_kwargs = {'title': {'required': True},
+                    'content': {'required': False, 'allow_null': True},
+                    'data': {'required': False, 'allow_null': True},
+                    'author': {'required': True},
+                    }
+
+    def __init__(self, **kwargs):
+        self.json_data = None
+        super().__init__(**kwargs)
+
+    def validate_file(self, file):
+        if not file:
+            return file
         try:
             self.json_data = json.load(file)
         except:
@@ -65,18 +137,13 @@ class UploadBookSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         data = self.get_data()
-        category, category_created = Category.objects.get_or_create(name=data.meta.categories[0])
-        user = validated_data.get('uploader')
-        return Book.objects.create(title=data.meta.name, author_id=data.meta.author_id, content=self.json_data['pages'],
-                                   data=self.json_data, category=category, uploader=user,
-                                   page_count=len(self.json_data['pages']))
-
-
-class BookSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Book
-        fields = '__all__'
-        list_serializer_class = BookListSerializer
+        data['content'] = self.json_data['pages']
+        data['data'] = self.json_data
+        data['page_count'] = len(self.json_data['pages'])
+        book = Book.objects.create(**data)
+        if data['pdf']:
+            BookPDF.objects.update_or_create(book_id=book.id, user=book.uploader, url=data['pdf'])
+        return book
 
 
 class SubmitBookSerializer(serializers.ModelSerializer):
@@ -100,7 +167,7 @@ class NestedBookSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class BookMarkSerializer(serializers.ModelSerializer):
+class BookMarkSerializer(NestedBookSerializer):
     class Meta(NestedBookSerializer.Meta):
         model = BookMark
 
@@ -128,6 +195,19 @@ class BookRatingSerializer(NestedBookSerializer):
             book=validated_data.get('book', None),
             defaults={'rating': validated_data.get('rating', None)})
         return rating
+
+
+class BookReviewSerializer(NestedBookSerializer):
+    class Meta(NestedBookSerializer.Meta):
+        model = BookReview
+        # fields = NestedBookSerializer.Meta.fields + ['rating']
+
+    def create(self, validated_data):
+        review, created = BookReview.objects.update_or_create(
+            user=validated_data.get('user', None),
+            book=validated_data.get('book', None),
+            defaults={'comment': validated_data.get('comment', None)})
+        return review
 
 
 class BookHighlightSerializer(NestedBookSerializer):

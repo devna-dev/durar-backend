@@ -40,6 +40,8 @@ BASE_INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'django.contrib.sites',
+    'django.contrib.postgres',
+    'django_extensions',
     'rest_framework',
     'rest_framework.authtoken',
 ]
@@ -55,12 +57,16 @@ INSTALLED_APPS = BASE_INSTALLED_APPS + [
     'debug_toolbar',
     'rolepermissions',
     # 'rest_framework_swagger',
-    'drf_yasg',
+    'easy_thumbnails',
 
     # Local
     'apps.categories',
     'apps.books',
     'apps.users',
+
+    # file cleanup on model delete
+    'django_cleanup.apps.CleanupConfig',
+    'drf_yasg',
 ]
 
 SITE_ID = 1
@@ -81,7 +87,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
@@ -244,8 +252,8 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # https://django-crispy-forms.readthedocs.io/en/latest/install.html#template-packs
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
-MEDIA_URL = "/mediafiles/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "mediafiles")
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False
@@ -260,3 +268,89 @@ EMAIL_HOST_USER = 'al-shamelah@internet-svc.com'
 EMAIL_HOST_PASSWORD = 'J*Pb4ATyb4@_KCn8'
 EMAIL_PORT = 8889
 DEFAULT_FROM_EMAIL = 'al-shamelah@internet-svc.com'
+
+# LOGGING
+# ------------------------------------------------------------------------------
+# Default logging in https://github.com/django/django/blob/master/django/utils/log.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse'
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue'
+        }
+    },
+    'formatters': {
+        'verbose': {
+            'format': '%(name)s %(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'db_console': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+        },
+        'django.server': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false'],
+            'class': 'django.utils.log.AdminEmailHandler'
+        },
+        'null': {
+            "class": 'logging.NullHandler',
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'mail_admins'],
+        },
+        'django.server': {
+            'handlers': ['django.server'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['mail_admins', 'console'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+        'django.db.backends': {
+            'level': 'DEBUG',
+            'handlers': ['db_console'],
+        },
+        'django.security.DisallowedHost': {
+            'level': 'ERROR',
+            'handlers': ['console', 'mail_admins'],
+            'propagate': True
+        },
+        'py.warnings': {
+            'handlers': ['null', ],
+            'propagate': False
+        },
+        'oscar.alerts': {
+            'handlers': ['null', ],
+            'level': "INFO",
+            'propagate': False
+        },
+        '': {
+            'handlers': ['console', ],
+            'level': "INFO",
+        },
+    }
+}

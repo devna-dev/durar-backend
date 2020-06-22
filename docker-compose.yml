@@ -7,6 +7,7 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./alshamelah_api:/usr/src/app
+      - ./media:/usr/src/app/media
     ports:
       - "8000:8000"
       - "25:25"
@@ -22,6 +23,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - "alshamelah_db_data:/var/lib/postgresql/data"
+      - ./containers_data/db/postgres/backups:/backups
     environment:
       - POSTGRES_USER=alshamelah_admin
       - POSTGRES_PASSWORD=Sy3aZdxGyQ8KWEtK

@@ -559,3 +559,74 @@ class CanManageBookPdf(permissions.IsAuthenticated):
         if not parent_permission:
             return False
         return True
+
+
+class CanManageBookReview(permissions.IsAuthenticated):
+    """
+    Write documentation
+    """
+
+    # book_lookup = 'parent_lookup_book' case of parent child
+
+    def has_permission(self, request, view):
+        from alshamelah_api.apps.users.roles import AppPermissions
+        # Allow list to all
+        if request.method in ['GET']:
+            return True
+
+        # Superuser can manage all the objects
+        if request.user.is_authenticated and request.user.is_superuser:
+            return True
+
+        if request.method in permissions.SAFE_METHODS:
+            return has_permission(request.user, AppPermissions.view_book_review)
+
+        # 'POST' method creation
+        if request.method == 'POST':
+            return has_permission(request.user, AppPermissions.create_book_review)
+
+        # 'PUT/PATCH' method update
+        if request.method in ['PUT', 'PATCH']:
+            return has_permission(request.user, AppPermissions.edit_book_review)
+
+        # Deleting Books
+        if request.method == 'DELETE' and has_permission(request.user, AppPermissions.delete_book_rating):
+            return True
+
+        parent_permission = super(CanManageBookReview, self).has_permission(request, view)
+
+        if not parent_permission:
+            return False
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        from alshamelah_api.apps.users.roles import AppPermissions
+        """
+        Manages only permissions for editing and deleting the objects
+        """
+
+        # Allow get to all
+        if request.method in ['GET']:
+            return True
+
+        # Superuser can manage all the objects
+        if request.user.is_authenticated and request.user.is_superuser:
+            return True
+
+        # 'PUT' method, editing the rental items
+        if request.method in ['PUT', 'PATCH'] and has_permission(request.user, AppPermissions.edit_book_review):
+            return True
+
+        # 'PUT' method, editing the rental items
+        # Let user have access to a single object
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        # Deleting rental items
+        if request.method == 'DELETE' and has_permission(request.user, AppPermissions.delete_book_review):
+            return True
+
+        parent_permission = super(CanManageBookReview, self).has_permission(request, view)
+        if not parent_permission:
+            return False
+        return True

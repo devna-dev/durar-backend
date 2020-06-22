@@ -4,10 +4,12 @@ from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.hashers import make_password
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
+from rolepermissions.checkers import has_permission
 from rolepermissions.roles import assign_role
 
-# Get the UserModel
+from .roles import AppPermissions
 
+# Get the UserModel
 UserModel = get_user_model()
 try:
     from allauth.account import app_settings as allauth_settings
@@ -24,11 +26,13 @@ except ImportError:
 
 class UserSerializer(serializers.ModelSerializer):
     email_verified = serializers.SerializerMethodField('is_email_verified')
+    permissions = serializers.SerializerMethodField('get_permissions')
 
     class Meta:
         model = UserModel
+        read_only_fields = ['email_verified', 'phone_verified']
         fields = ['id', 'email', 'name', 'birthday', 'phone', 'phone_code', 'gender', 'country', 'address', 'photo',
-                  'email_verified', 'phone_verified']
+                  'email_verified', 'phone_verified', 'permissions']
 
     def create(self, validated_data):
         password = validated_data.pop('password')
@@ -43,6 +47,13 @@ class UserSerializer(serializers.ModelSerializer):
             email = EmailAddress.objects.filter(user_id=user.id, email=user.email).first()
             if email and email.verified: return True
         return False
+
+    def get_permissions(self, user):
+        return {
+            'can_submit_book': has_permission(user, AppPermissions.submit_books),
+            'can_submit_audio': has_permission(user, AppPermissions.submit_audio),
+            'can_create_chatroom': has_permission(user, AppPermissions.create_chat_room),
+        }
 
 
 class LoginSerializer(serializers.Serializer):
