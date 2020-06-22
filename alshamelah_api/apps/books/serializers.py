@@ -6,7 +6,8 @@ from munch import munchify
 from rest_framework import serializers
 from rest_framework.utils import json
 
-from .models import Book, BookMark, BookAudio, BookPDF, BookRating, BookComment, BookHighlight, BookReview
+from .models import Book, BookMark, BookAudio, BookPDF, BookRating, BookComment, BookHighlight, BookReview, \
+    BookReviewLike
 from ..categories.serializers import CategorySerializer
 
 
@@ -16,6 +17,17 @@ class CurrentBookDefault(object):
 
     def __call__(self):
         return self.book
+
+    def __repr__(self):
+        return '%s()' % self.__class__.__name__
+
+
+class CurrentReviewDefault(object):
+    def set_context(self, serializer_field):
+        self.review = serializer_field.context.get('review')
+
+    def __call__(self):
+        return self.review
 
     def __repr__(self):
         return '%s()' % self.__class__.__name__
@@ -224,3 +236,18 @@ class BookAudioSerializer(NestedBookSerializer):
 class BookPDFSerializer(NestedBookSerializer):
     class Meta(NestedBookSerializer.Meta):
         model = BookPDF
+
+
+class BookReviewLikeSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    review = serializers.HiddenField(default=CurrentReviewDefault())
+
+    class Meta:
+        model = BookReviewLike
+        fields = '__all__'
+
+    def create(self, validated_data):
+        like, created = BookReviewLike.objects.update_or_create(
+            user=validated_data.get('user', None),
+            review=validated_data.get('review', None), )
+        return like

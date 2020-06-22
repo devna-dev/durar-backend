@@ -19,13 +19,13 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from .models import Book, BookMark, BookComment, BookHighlight, BookAudio, BookPDF
+from .models import Book, BookMark, BookComment, BookHighlight, BookAudio, BookPDF, BookReview, BookReviewLike
 from .permissions import CanManageBook, CanSubmitBook, CanManageBookMark, CanManageBookRating, CanManageBookAudio, \
     CanManageBookComment, CanManageBookHighlight, CanManageBookPdf, CanManageBookReview
 from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, BookAudioSerializer, \
     BookCommentSerializer, \
     BookHighlightSerializer, BookRatingSerializer, UploadBookSerializer, BookListSerializer, SubmitBookSerializer, \
-    BookReviewSerializer
+    BookReviewSerializer, BookReviewLikeSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
 
 
@@ -325,3 +325,35 @@ class CategoryBooks(views.APIView):
 
 
 category_books_view = CategoryBooks.as_view()
+
+
+class BookReviewLikesViewSet(viewsets.ModelViewSet):
+    def dispatch(self, request, *args, **kwargs):
+        review_id = kwargs.get('review_id', None)
+        book_id = kwargs.get('book_id', None)
+        self.book = get_object_or_404(Book, pk=book_id)
+        self.review = get_object_or_404(BookReview, pk=review_id)
+        self.user = self.request.user
+        return super(BookReviewLikesViewSet, self).dispatch(request, *args, **kwargs)
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+        context = super(BookReviewLikesViewSet, self).get_serializer_context()
+        if hasattr(self, 'review') and hasattr(self, 'user') and hasattr(self, 'book'):
+            context.update(
+                book=self.book,
+                review=self.review,
+                user=self.user
+            )
+        return context
+
+    def get_queryset(self):
+        return BookReviewLike.objects.filter(review_id=self.review.id, user_id=self.request.user.id)
+
+    def list(self, request, *args, **kwargs):
+        return Response(BookReviewLike.objects.count(review_id=self.review.id), status=status.HTTP_200_OK)
+
+    serializer_class = BookReviewLikeSerializer
+    permission_classes = (CanManageBookReview,)

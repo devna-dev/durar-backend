@@ -103,6 +103,16 @@ class BookReview(models.Model):
         return self.comment
 
 
+class BookReviewLike(models.Model):
+    user = models.ForeignKey('users.User', related_name='likes', verbose_name=_(u'User'), null=False,
+                             on_delete=models.CASCADE)
+    review = models.ForeignKey(BookReview, related_name='likes', verbose_name=_(u'Review'), null=False,
+                               on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.user.name + ' like:' + self.review.comment
+
+
 class BookComment(models.Model):
     user = models.ForeignKey('users.User', related_name='book_comments', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
@@ -133,13 +143,11 @@ class BookHighlight(models.Model):
     book = models.ForeignKey(Book, related_name='book_highlights', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
     page = models.PositiveSmallIntegerField(verbose_name=_(u'Page'))
-    line = models.PositiveSmallIntegerField(verbose_name=_(u'Line'))
     start = models.PositiveIntegerField(verbose_name=_(u'Start'))
-    end = models.PositiveIntegerField(verbose_name=_(u'End'))
+    highlighted_text = models.TextField(verbose_name=_(u'Highlighted Text'))
 
     def __str__(self):
-        return "page:{page} line:{line} from:{start} to:{end}".format(page=self.page, line=self.line,
-                                                                      start=self.start, end=self.end)
+        return "page:{page} highlighted:{highlight} ".format(page=self.page, highlight=self.highlighted_text)
 
 
 class BookMedia(models.Model):
@@ -183,6 +191,73 @@ class BookPDF(BookMedia):
     def __init__(self, *args, **kwargs):
         super(BookMedia, self).__init__(*args, **kwargs)
         self.type = 'pdf'
+
+
+class FavoriteBook(models.Model):
+    user = models.ForeignKey('users.User', related_name='favorite_books', verbose_name=_(u'User'), null=False,
+                             on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, related_name='favorite_books', verbose_name=_(u'Book'), null=False,
+                             on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.user.name + ":" + self.book.title
+
+
+class ReadBook(models.Model):
+    user = models.ForeignKey('users.User', related_name='reads', verbose_name=_(u'User'), null=False,
+                             on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, related_name='readers', verbose_name=_(u'Book'), null=False,
+                             on_delete=models.CASCADE)
+    creation_time = models.DateTimeField(auto_now_add=True, null=True)
+
+    def __str__(self):
+        return self.user.name + ":" + self.book.title
+
+
+class DownloadBook(models.Model):
+    user = models.ForeignKey('users.User', related_name='downloads', verbose_name=_(u'User'), null=False,
+                             on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, related_name='downloads', verbose_name=_(u'Book'), null=False,
+                             on_delete=models.CASCADE)
+    creation_time = models.DateTimeField(auto_now_add=True, null=True)
+
+    def __str__(self):
+        return self.user.name + ":" + self.book.title
+
+
+class ListenBook(models.Model):
+    user = models.ForeignKey('users.User', related_name='listens', verbose_name=_(u'User'), null=False,
+                             on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, related_name='listens', verbose_name=_(u'Book'), null=False,
+                             on_delete=models.CASCADE)
+    creation_time = models.DateTimeField(auto_now_add=True, null=True)
+
+    def __str__(self):
+        return self.user.name + ":" + self.book.title
+
+
+class SearchBook(models.Model):
+    user = models.ForeignKey('users.User', related_name='searches', verbose_name=_(u'User'), null=False,
+                             on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, related_name='searches', verbose_name=_(u'Book'), null=False,
+                             on_delete=models.CASCADE)
+    creation_time = models.DateTimeField(auto_now_add=True, null=True)
+
+    def __str__(self):
+        return self.user.name + ":" + self.book.title
+
+
+class BookSuggestion(models.Model):
+    user = models.ForeignKey('users.User', related_name='suggestions', verbose_name=_(u'User'), null=False,
+                             on_delete=models.CASCADE)
+    title = models.CharField(max_length=100, verbose_name=_(u'Title'), null=False, blank=False)
+    author = models.CharField(max_length=1000, verbose_name=_(u'Author'), null=False, blank=False)
+    publish_date = models.DateField(null=True, blank=True, verbose_name=_(u'Publish Date'))
+    url = models.URLField(verbose_name=_(u'Book Url'), null=False, blank=False)
+    creation_time = models.DateTimeField(auto_now_add=True, null=True)
+
+    def __str__(self):
+        return self.user.name + ":" + self.title + ('(%s)' % self.author)
 
 
 @receiver(models.signals.post_delete, sender=Book)
