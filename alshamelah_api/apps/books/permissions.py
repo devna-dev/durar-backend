@@ -630,3 +630,37 @@ class CanManageBookReview(permissions.IsAuthenticated):
         if not parent_permission:
             return False
         return True
+
+
+class CanManageUserData(permissions.IsAuthenticated):
+    """
+    Write documentation
+    """
+
+    # book_lookup = 'parent_lookup_book' case of parent child
+
+    def has_permission(self, request, view):
+
+        # Superuser can manage all the objects
+        if request.user.is_authenticated:
+            return True
+
+        parent_permission = super(CanManageUserData, self).has_permission(request, view)
+
+        if not parent_permission:
+            return False
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        """
+        Manages only permissions for editing and deleting the objects
+        """
+
+        # Superuser can manage all the objects
+        if request.user.is_authenticated:
+            return True
+
+        parent_permission = super(CanManageUserData, self).has_permission(request, view)
+        if not parent_permission:
+            return False
+        return True

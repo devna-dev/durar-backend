@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import coreapi
 import coreschema
 import django_filters
-from django.db.models import Avg
+from django.db.models import Avg, F, Count, Q
 from django.utils.encoding import force_str
 from django.utils.translation import ugettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
@@ -19,13 +19,14 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from .models import Book, BookMark, BookComment, BookHighlight, BookAudio, BookPDF, BookReview, BookReviewLike
+from .models import Book, BookMark, BookComment, BookHighlight, BookAudio, BookPDF, BookReview, BookReviewLike, \
+    ReadBook, FavoriteBook, BookSuggestion
 from .permissions import CanManageBook, CanSubmitBook, CanManageBookMark, CanManageBookRating, CanManageBookAudio, \
-    CanManageBookComment, CanManageBookHighlight, CanManageBookPdf, CanManageBookReview
+    CanManageBookComment, CanManageBookHighlight, CanManageBookPdf, CanManageBookReview, CanManageUserData
 from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, BookAudioSerializer, \
     BookCommentSerializer, \
     BookHighlightSerializer, BookRatingSerializer, UploadBookSerializer, BookListSerializer, SubmitBookSerializer, \
-    BookReviewSerializer, BookReviewLikeSerializer
+    BookReviewSerializer, BookReviewLikeSerializer, ReadBookSerializer, FavoriteBookSerializer, BookSuggestionSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
 
 
@@ -50,7 +51,7 @@ class BooksFilterBackend(DjangoFilterBackend):
     content_query_param = 'content'
     content_query_description = _('Filter books which contains this content')
     sort_query_param = 'sort'
-    sort_query_description = _('Sort books by (publish_date, )')
+    sort_query_description = _('Sort books by (publish_date, .. etc) "-" is for descending order')
 
     def get_schema_fields(self, view):
         fields = [
@@ -88,7 +89,12 @@ class BooksFilterBackend(DjangoFilterBackend):
                 schema=coreschema.Enum(
                     title='Sort by',
                     description=force_str(self.sort_query_description),
-                    enum=['publish_date', 'add_date', 'author', 'has_audio', 'pages', 'downloads', 'reads', 'rate']
+                    enum=['publish_date', 'add_date', 'author', 'has_audio', 'pages', 'downloads', 'reads', 'rate',
+                          'searches',
+                          '-publish_date', '-add_date', '-author', '-has_audio', '-pages', '-downloads', '-reads',
+                          '-rate',
+                          '-searches'
+                          ]
                 )
             )
         ]
@@ -164,17 +170,48 @@ class BookViewSet(viewsets.ModelViewSet):
         else:
             return CustomPageNumberPagination
 
+    def get_queryset(self):
+        if self.action == 'list':
+            return Book.objects.filter(approved=True).prefetch_related('category', 'book_ratings', 'downloads',
+                                                                       'listens', 'searches', 'book_media', 'readers')
+        return self.queryset
+
     def filter_queryset(self, queryset):
         ordering = self.request.query_params.get('sort', 'author')
         if self.request.user.is_superuser:
             queryset = Book.objects.all().prefetch_related('category', 'book_ratings')
         queryset = super(BookViewSet, self).filter_queryset(queryset)
         if ordering == 'rate':
-            return queryset.annotate(avg_rate=Avg('book_ratings__rating')).order_by('avg_rate')
+            return queryset.annotate(avg_rate=Avg('book_ratings__rating')).order_by(F('avg_rate').asc(nulls_last=False))
+        if ordering == '-rate':
+            return queryset.annotate(avg_rate=Avg('book_ratings__rating')).order_by(F('avg_rate').desc(nulls_last=True))
         if ordering == 'add_date':
             ordering = 'creation_time'
-        if ordering in ['pages', 'downloads', 'reads']:
+        if ordering == '-add_date':
+            ordering = '-creation_time'
+        if ordering in ['pages', '-pages']:
             ordering = ordering + 's_count'
+        if ordering == 'downloads':
+            return queryset.annotate(download_count=Count('downloads')).order_by(
+                F('download_count').asc(nulls_last=False))
+        if ordering == '-downloads':
+            return queryset.annotate(download_count=Count('downloads')).order_by(
+                F('download_count').desc(nulls_last=True))
+        if ordering == 'reads':
+            return queryset.annotate(read_count=Count('readers')).order_by(F('read_count').asc(nulls_last=False))
+        if ordering == '-reads':
+            return queryset.annotate(read_count=Count('readers')).order_by(F('read_count').desc(nulls_last=True))
+        if ordering == 'searches':
+            return queryset.annotate(search_count=Count('searches')).order_by(F('search_count').asc(nulls_last=False))
+        if ordering == '-searches':
+            return queryset.annotate(search_count=Count('searches')).order_by(F('search_count').desc(nulls_last=True))
+        if ordering == 'has_audio':
+            return queryset.annotate(has_audio=Count('book_media', filter=Q(book_media__type='audio') & Q(
+                book_media__approved=True))).order_by(F('has_audio').asc(nulls_last=True))
+        if ordering == '-has_audio':
+            return queryset.annotate(has_audio=Count('book_media', filter=Q(book_media__type='audio') & Q(
+                book_media__approved=True))).order_by(F('has_audio').desc(nulls_last=True))
+
         return queryset.order_by(ordering)
 
     def get_serializer_class(self):
@@ -357,3 +394,82 @@ class BookReviewLikesViewSet(viewsets.ModelViewSet):
 
     serializer_class = BookReviewLikeSerializer
     permission_classes = (CanManageBookReview,)
+
+
+class ReadViewSet(viewsets.ModelViewSet):
+    permission_classes = (CanManageUserData,)
+    serializer_class = ReadBookSerializer
+
+    @property
+    def pagination_class(self):
+        if 'offset' in self.request.query_params:
+            return CustomLimitOffsetPagination
+        else:
+            return CustomPageNumberPagination
+
+    def get_queryset(self):
+        return ReadBook.objects.filter(user_id=self.request.user.id).prefetch_related('book')
+
+
+class FavoriteViewSet(viewsets.ModelViewSet):
+    permission_classes = (CanManageUserData,)
+    serializer_class = FavoriteBookSerializer
+
+    @property
+    def pagination_class(self):
+        if 'offset' in self.request.query_params:
+            return CustomLimitOffsetPagination
+        else:
+            return CustomPageNumberPagination
+
+    def get_queryset(self):
+        return FavoriteBook.objects.filter(user_id=self.request.user.id).prefetch_related('book')
+
+
+class SuggestionsViewSet(viewsets.ModelViewSet):
+    permission_classes = (CanManageUserData,)
+    serializer_class = BookSuggestionSerializer
+
+    @property
+    def pagination_class(self):
+        if 'offset' in self.request.query_params:
+            return CustomLimitOffsetPagination
+        else:
+            return CustomPageNumberPagination
+
+    def get_queryset(self):
+        return BookSuggestion.objects.filter(user_id=self.request.user.id)
+
+
+class UserDownloads(views.APIView):
+    def get_object(self, queryset=None):
+        return self.queryset.none()
+
+    queryset = Book.objects
+    permission_classes = [CanManageUserData]
+
+    def get(self, *args, **kwargs):
+        data = self.queryset.filter(downloads__user_id=self.request.user.id)
+        serializer = BookListSerializer(instance=data, many=True)
+        return Response(serializer.data,
+                        status=status.HTTP_200_OK)
+
+
+user_downloads_view = UserDownloads.as_view()
+
+
+class UserListens(views.APIView):
+    def get_object(self, queryset=None):
+        return self.queryset.none()
+
+    queryset = Book.objects
+    permission_classes = [CanManageUserData]
+
+    def get(self, *args, **kwargs):
+        data = self.queryset.filter(listens__user_id=self.request.user.id)
+        serializer = BookListSerializer(instance=data, many=True)
+        return Response(serializer.data,
+                        status=status.HTTP_200_OK)
+
+
+user_listens_view = UserListens.as_view()

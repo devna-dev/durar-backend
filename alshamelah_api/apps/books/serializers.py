@@ -7,8 +7,8 @@ from rest_framework import serializers
 from rest_framework.utils import json
 
 from .models import Book, BookMark, BookAudio, BookPDF, BookRating, BookComment, BookHighlight, BookReview, \
-    BookReviewLike
-from ..categories.serializers import CategorySerializer
+    BookReviewLike, ReadBook, FavoriteBook, DownloadBook, ListenBook, BookSuggestion
+from ..categories.serializers import CategorySerializer, SubCategorySerializer
 
 
 class CurrentBookDefault(object):
@@ -35,15 +35,42 @@ class CurrentReviewDefault(object):
 
 class BookListSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField('get_average_rating')
+    readers = serializers.SerializerMethodField('get_readers')
+    downloads = serializers.SerializerMethodField('get_downloads')
+    listens = serializers.SerializerMethodField('get_listens')
+    searches = serializers.SerializerMethodField('get_searches')
+    has_audio = serializers.SerializerMethodField('does_have_audio')
     category = CategorySerializer()
+    sub_category = SubCategorySerializer()
 
     class Meta:
         model = Book
-        fields = ['title', 'author', 'author_id', 'category', 'rating', 'page_count']
+        fields = ['id', 'title', 'author', 'category', 'sub_category', 'rating', 'page_count', 'downloads', 'listens',
+                  'readers', 'searches', 'has_audio']
 
     @staticmethod
     def get_average_rating(book):
         return book.book_ratings.all().aggregate(Avg('rating')).get('rating__avg', 0.00)
+
+    @staticmethod
+    def get_readers(book):
+        return book.readers.count()
+
+    @staticmethod
+    def get_downloads(book):
+        return book.downloads.count()
+
+    @staticmethod
+    def get_listens(book):
+        return book.listens.count()
+
+    @staticmethod
+    def get_searches(book):
+        return book.searches.count()
+
+    @staticmethod
+    def does_have_audio(book):
+        return book.book_media.filter(approved=True, type='audio').exists()
 
 
 class UploadBookSerializer(serializers.ModelSerializer):
@@ -130,32 +157,6 @@ class BookSerializer(serializers.ModelSerializer):
                     'data': {'required': False, 'allow_null': True},
                     'author': {'required': True},
                     }
-
-    def __init__(self, **kwargs):
-        self.json_data = None
-        super().__init__(**kwargs)
-
-    def validate_file(self, file):
-        if not file:
-            return file
-        try:
-            self.json_data = json.load(file)
-        except:
-            raise serializers.ValidationError(_('Bad json file'))
-        return file
-
-    def get_data(self):
-        return munchify(self.json_data) if self.json_data else None
-
-    def create(self, validated_data):
-        data = self.get_data()
-        data['content'] = self.json_data['pages']
-        data['data'] = self.json_data
-        data['page_count'] = len(self.json_data['pages'])
-        book = Book.objects.create(**data)
-        if data['pdf']:
-            BookPDF.objects.update_or_create(book_id=book.id, user=book.uploader, url=data['pdf'])
-        return book
 
 
 class SubmitBookSerializer(serializers.ModelSerializer):
@@ -251,3 +252,53 @@ class BookReviewLikeSerializer(serializers.ModelSerializer):
             user=validated_data.get('user', None),
             review=validated_data.get('review', None), )
         return like
+
+
+class ReadBookSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = ReadBook
+        fields = '__all__'
+
+    read_only_fields = ['user']
+
+
+class FavoriteBookSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = FavoriteBook
+        fields = '__all__'
+
+    read_only_fields = ['user']
+
+
+class DownloadBookSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = DownloadBook
+        fields = '__all__'
+
+    read_only_fields = ['user']
+
+
+class ListenBookSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = ListenBook
+        fields = '__all__'
+
+    read_only_fields = ['user']
+
+
+class BookSuggestionSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = BookSuggestion
+        fields = '__all__'
+
+    read_only_fields = ['user']

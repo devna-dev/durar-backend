@@ -11,4 +11,4 @@ class BookAdmin(admin.ModelAdmin):
         'approved',
     )
     exclude = ['data']
-    readonly_fields = ('uploader', 'read_count', 'download_count', 'search_count', 'has_audio')
+    readonly_fields = ('uploader',)
