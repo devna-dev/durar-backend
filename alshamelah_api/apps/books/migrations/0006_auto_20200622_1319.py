@@ -24,6 +24,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='bookmedia',
             name='url',
-            field=models.FileField(upload_to=apps.books.models.BookMedia.path, verbose_name='Url'),
+            field=models.FileField(upload_to=apps.books.models.BookMedia.get_path, verbose_name='Url'),
         ),
     ]

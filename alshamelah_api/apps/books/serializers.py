@@ -6,8 +6,9 @@ from munch import munchify
 from rest_framework import serializers
 from rest_framework.utils import json
 
-from .models import Book, BookMark, BookAudio, BookPDF, BookRating, BookComment, BookHighlight, BookReview, \
+from .models import Book, BookMark, BookAudio, BookPDF, BookComment, BookHighlight, BookReview, \
     BookReviewLike, ReadBook, FavoriteBook, DownloadBook, ListenBook, BookSuggestion
+from ..authors.serializers import AuthorSerializer
 from ..categories.serializers import CategorySerializer, SubCategorySerializer
 
 
@@ -42,6 +43,7 @@ class BookListSerializer(serializers.ModelSerializer):
     has_audio = serializers.SerializerMethodField('does_have_audio')
     category = CategorySerializer()
     sub_category = SubCategorySerializer()
+    author = AuthorSerializer()
 
     class Meta:
         model = Book
@@ -50,7 +52,7 @@ class BookListSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_average_rating(book):
-        return book.book_ratings.all().aggregate(Avg('rating')).get('rating__avg', 0.00)
+        return book.reviews.all().aggregate(Avg('rating')).get('rating__avg', 0.00)
 
     @staticmethod
     def get_readers(book):
@@ -82,7 +84,7 @@ class UploadBookSerializer(serializers.ModelSerializer):
         model = Book
         fields = '__all__'
         read_only_fields = ['content', 'data', 'uploader', 'has_audio', 'approved', 'read_count',
-                            'download_count', 'page_count', 'search_count', 'author_id']
+                            'download_count', 'page_count', 'search_count']
         extra_kwargs = {'title': {'required': True},
                         'content': {'required': False, 'allow_null': True},
                         'data': {'required': False, 'allow_null': True},
@@ -150,13 +152,33 @@ class BookSerializer(serializers.ModelSerializer):
         fields = '__all__'
         list_serializer_class = BookListSerializer
 
-    read_only_fields = ['content', 'data', 'uploader', 'has_audio', 'approved', 'read_count',
-                        'download_count', 'page_count', 'search_count']
+    read_only_fields = ['content', 'data', 'uploader', 'approved', 'page_count']
     extra_kwargs = {'title': {'required': True},
                     'content': {'required': False, 'allow_null': True},
                     'data': {'required': False, 'allow_null': True},
                     'author': {'required': True},
                     }
+
+
+class DownloadBookSerializer(serializers.ModelSerializer):
+    content_no_tashkeel = serializers.SerializerMethodField('get_no_tashkeel_content')
+    category = CategorySerializer()
+    sub_category = SubCategorySerializer()
+
+    class Meta:
+        model = Book
+        fields = ['title', 'category', 'sub_category', 'cover_image', 'content', 'author', 'page_count',
+                  'content_no_tashkeel']
+
+    @staticmethod
+    def get_no_tashkeel_content(book):
+        from pyarabic.araby import strip_tashkeel
+        if not book.content:
+            return None
+        content = list(book.content)
+        for page in content:
+            page['text'] = strip_tashkeel(page['text'])
+        return content
 
 
 class SubmitBookSerializer(serializers.ModelSerializer):
@@ -197,17 +219,17 @@ class BookCommentSerializer(NestedBookSerializer):
         model = BookComment
 
 
-class BookRatingSerializer(NestedBookSerializer):
-    class Meta(NestedBookSerializer.Meta):
-        model = BookRating
-        # fields = NestedBookSerializer.Meta.fields + ['rating']
-
-    def create(self, validated_data):
-        rating, created = BookRating.objects.update_or_create(
-            user=validated_data.get('user', None),
-            book=validated_data.get('book', None),
-            defaults={'rating': validated_data.get('rating', None)})
-        return rating
+# class BookRatingSerializer(NestedBookSerializer):
+#     class Meta(NestedBookSerializer.Meta):
+#         model = BookReview
+#         # fields = NestedBookSerializer.Meta.fields + ['rating']
+#
+#     def create(self, validated_data):
+#         rating, created = BookReview.objects.update_or_create(
+#             user=validated_data.get('user', None),
+#             book=validated_data.get('book', None),
+#             defaults={'rating': validated_data.get('rating', None)})
+#         return rating
 
 
 class BookReviewSerializer(NestedBookSerializer):
@@ -219,7 +241,7 @@ class BookReviewSerializer(NestedBookSerializer):
         review, created = BookReview.objects.update_or_create(
             user=validated_data.get('user', None),
             book=validated_data.get('book', None),
-            defaults={'comment': validated_data.get('comment', None)})
+            defaults=validated_data)
         return review
 
 
@@ -273,8 +295,14 @@ class FavoriteBookSerializer(serializers.ModelSerializer):
 
     read_only_fields = ['user']
 
+    def create(self, validated_data):
+        favorite, created = FavoriteBook.objects.update_or_create(
+            user=validated_data.get('user', None),
+            book=validated_data.get('book', None), )
+        return favorite
 
-class DownloadBookSerializer(serializers.ModelSerializer):
+
+class BookDownloadedSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:

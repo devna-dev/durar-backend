@@ -7,6 +7,7 @@ from rest_framework import serializers, exceptions
 from rolepermissions.checkers import has_permission
 from rolepermissions.roles import assign_role
 
+from .models import Note, NotificationSetting, Notification
 from .roles import AppPermissions
 
 # Get the UserModel
@@ -24,15 +25,30 @@ except ImportError:
     raise ImportError("allauth needs to be added to INSTALLED_APPS.")
 
 
+class NotificationSettingSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = NotificationSetting
+        fields = ['device_id', 'enabled', 'user', 'book_added', 'book_approved', 'audio_approved']
+
+    def create(self, validated_data):
+        setting, created = NotificationSetting.objects.update_or_create(
+            user=validated_data.get('user', None),
+            defaults=validated_data)
+        return setting
+
+
 class UserSerializer(serializers.ModelSerializer):
     email_verified = serializers.SerializerMethodField('is_email_verified')
     permissions = serializers.SerializerMethodField('get_permissions')
+    notification_settings = NotificationSettingSerializer(source='notification_setting')
 
     class Meta:
         model = UserModel
         read_only_fields = ['email_verified', 'phone_verified']
         fields = ['id', 'email', 'name', 'birthday', 'phone', 'phone_code', 'gender', 'country', 'address', 'photo',
-                  'email_verified', 'phone_verified', 'permissions']
+                  'email_verified', 'phone_verified', 'permissions', 'notification_settings']
 
     def create(self, validated_data):
         password = validated_data.pop('password')
@@ -204,3 +220,20 @@ class RegisterSerializer(serializers.Serializer):
         assign_role(user, 'user')
 
         return user
+
+
+class NoteSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = Note
+        fields = ['id', 'note', 'user']
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = Notification
+        fields = ['id', 'title', 'type', 'user', 'message', 'read', 'creation_time']
+        read_only_fields = ['id', 'title', 'type', 'user', 'message', 'creation_time']

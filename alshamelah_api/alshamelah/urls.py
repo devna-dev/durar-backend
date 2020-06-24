@@ -16,11 +16,13 @@ urlpatterns = [
 
 api_v1_urls = [
     url(r'^users/', include('django.contrib.auth.urls')),
-    url(r'^accounts/', include('apps.users.urls')),
-    url(r'^accounts/', include('rest_auth.urls')),
     url(r'^accounts/registration/', include('rest_auth.registration.urls')),
+    path('', include('apps.users.urls')),
     path('', include('apps.categories.urls')),
     path('', include('apps.books.urls')),
+    path('', include('apps.authors.urls')),
+    path('', include('apps.support.urls')),
+    path('', include('apps.chatrooms.urls')),
 ]
 
 urlpatterns += [

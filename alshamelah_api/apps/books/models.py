@@ -9,11 +9,12 @@ from easy_thumbnails.fields import ThumbnailerImageField
 from model_utils import Choices
 
 from .managers import BookAudioManager, BookPDFManager
+from ..core.models import BaseModel
 
 
-class Book(models.Model):
+class Book(BaseModel):
 
-    def path(self, filename):
+    def get_path(self, filename):
         return os.path.join(
             self.path,
             'cover-image',
@@ -23,8 +24,8 @@ class Book(models.Model):
     title = models.CharField(max_length=100, verbose_name=_(u'Title'), null=False, blank=False)
     content = JSONField(verbose_name=_(u'Content'), null=True, blank=True)
     data = JSONField(null=True)
-    author = models.CharField(max_length=1000, verbose_name=_(u'Author'), null=False, blank=False)
-    author_id = models.PositiveIntegerField(blank=True, null=True, verbose_name=_(u'Author Id'))
+    author = models.ForeignKey('authors.Author', related_name='books', verbose_name=_(u'Author'), null=True,
+                               on_delete=models.SET_NULL)
     uploader = models.ForeignKey('users.User', related_name='books', verbose_name=_(u'Uploader'), null=True,
                                  on_delete=models.SET_NULL)
     category = models.ForeignKey('categories.Category', related_name='books', verbose_name=_(u'Category'), null=True,
@@ -34,11 +35,9 @@ class Book(models.Model):
                                      on_delete=models.SET_NULL)
     # has_audio = models.BooleanField(verbose_name=_(u'Has Audio'), default=False, null=True)
     approved = models.BooleanField(verbose_name=_(u'Approved'), default=False, null=True)
-    creation_time = models.DateTimeField(auto_now_add=True, null=True)
-    last_update_time = models.DateTimeField(auto_now=True, null=True)
     publish_date = models.DateField(null=True, blank=True, verbose_name=_(u'Publish Date'))
     cover_image = ThumbnailerImageField(
-        upload_to=path,
+        upload_to=get_path,
         blank=True,
         null=True,
         resize_source=dict(size=(100, 100))
@@ -74,7 +73,18 @@ class Book(models.Model):
         super(Book, self).save(*args, **kwargs)
 
 
-class BookRating(models.Model):
+# class BookRating(BaseModel):
+#
+#     user = models.ForeignKey('users.User', related_name='book_ratings', verbose_name=_(u'User'), null=False,
+#                              on_delete=models.CASCADE)
+#     book = models.ForeignKey(Book, related_name='book_ratings', verbose_name=_(u'Book'), null=False,
+#                              on_delete=models.CASCADE)
+#
+#     def __str__(self):
+#         return self.rating
+
+
+class BookReview(BaseModel):
     RATING_RANGE = (
         (1, '1'),
         (2, '2'),
@@ -82,29 +92,18 @@ class BookRating(models.Model):
         (4, '4'),
         (5, '5')
     )
-
-    user = models.ForeignKey('users.User', related_name='book_ratings', verbose_name=_(u'User'), null=False,
+    user = models.ForeignKey('users.User', related_name='reviews', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, related_name='book_ratings', verbose_name=_(u'Book'), null=False,
+    book = models.ForeignKey(Book, related_name='reviews', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
-    rating = models.PositiveSmallIntegerField(verbose_name=_(u'Rating'), choices=RATING_RANGE)
-
-    def __str__(self):
-        return self.rating
-
-
-class BookReview(models.Model):
-    user = models.ForeignKey('users.User', related_name='book_reviews', verbose_name=_(u'User'), null=False,
-                             on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, related_name='book_reviews', verbose_name=_(u'Book'), null=False,
-                             on_delete=models.CASCADE)
-    comment = models.TextField(verbose_name=_(u'Comment'), null=False, blank=False)
+    rating = models.PositiveSmallIntegerField(verbose_name=_(u'Rating'), choices=RATING_RANGE, null=True)
+    comment = models.TextField(verbose_name=_(u'Comment'), null=True)
 
     def __str__(self):
         return self.comment
 
 
-class BookReviewLike(models.Model):
+class BookReviewLike(BaseModel):
     user = models.ForeignKey('users.User', related_name='likes', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     review = models.ForeignKey(BookReview, related_name='likes', verbose_name=_(u'Review'), null=False,
@@ -114,7 +113,7 @@ class BookReviewLike(models.Model):
         return self.user.name + ' like:' + self.review.comment
 
 
-class BookComment(models.Model):
+class BookComment(BaseModel):
     user = models.ForeignKey('users.User', related_name='book_comments', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='book_comments', verbose_name=_(u'Book'), null=False,
@@ -127,7 +126,7 @@ class BookComment(models.Model):
         return self.comment
 
 
-class BookMark(models.Model):
+class BookMark(BaseModel):
     user = models.ForeignKey('users.User', related_name='book_marks', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='book_marks', verbose_name=_(u'Book'), null=False,
@@ -138,7 +137,7 @@ class BookMark(models.Model):
         return self.page
 
 
-class BookHighlight(models.Model):
+class BookHighlight(BaseModel):
     user = models.ForeignKey('users.User', related_name='book_highlights', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='book_highlights', verbose_name=_(u'Book'), null=False,
@@ -151,13 +150,13 @@ class BookHighlight(models.Model):
         return "page:{page} highlighted:{highlight} ".format(page=self.page, highlight=self.highlighted_text)
 
 
-class BookMedia(models.Model):
+class BookMedia(BaseModel):
     MEDIA_CHOICES = Choices(
         ('audio', _(u'Audio')),
         ('pdf', _(u'PDF')),
     )
 
-    def path(self, file):
+    def get_path(self, file):
         return os.path.join(self.book.path, self.type, file)
 
     user = models.ForeignKey('users.User', related_name='book_media', verbose_name=_(u'User'), null=False,
@@ -165,7 +164,7 @@ class BookMedia(models.Model):
     book = models.ForeignKey(Book, related_name='book_media', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=MEDIA_CHOICES, verbose_name=_(u'Type'))
-    url = models.FileField(verbose_name=_(u'Url'), upload_to=path)
+    url = models.FileField(verbose_name=_(u'Url'), upload_to=get_path)
     approved = models.BooleanField(verbose_name=_(u'Approved'), default=False)
 
     def __str__(self):
@@ -194,7 +193,7 @@ class BookPDF(BookMedia):
         self.type = 'pdf'
 
 
-class FavoriteBook(models.Model):
+class FavoriteBook(BaseModel):
     user = models.ForeignKey('users.User', related_name='favorite_books', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='favorite_books', verbose_name=_(u'Book'), null=False,
@@ -204,58 +203,53 @@ class FavoriteBook(models.Model):
         return self.user.name + ":" + self.book.title
 
 
-class ReadBook(models.Model):
+class ReadBook(BaseModel):
     user = models.ForeignKey('users.User', related_name='reads', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='readers', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.user.name + ":" + self.book.title
 
 
-class DownloadBook(models.Model):
+class DownloadBook(BaseModel):
     user = models.ForeignKey('users.User', related_name='downloads', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='downloads', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.user.name + ":" + self.book.title
 
 
-class ListenBook(models.Model):
+class ListenBook(BaseModel):
     user = models.ForeignKey('users.User', related_name='listens', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='listens', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.user.name + ":" + self.book.title
 
 
-class SearchBook(models.Model):
+class SearchBook(BaseModel):
     user = models.ForeignKey('users.User', related_name='searches', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='searches', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.user.name + ":" + self.book.title
 
 
-class BookSuggestion(models.Model):
+class BookSuggestion(BaseModel):
     user = models.ForeignKey('users.User', related_name='suggestions', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
     title = models.CharField(max_length=100, verbose_name=_(u'Title'), null=False, blank=False)
     author = models.CharField(max_length=1000, verbose_name=_(u'Author'), null=False, blank=False)
     publish_date = models.DateField(null=True, blank=True, verbose_name=_(u'Publish Date'))
     url = models.URLField(verbose_name=_(u'Book Url'), null=False, blank=False)
-    creation_time = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return self.user.name + ":" + self.title + ('(%s)' % self.author)

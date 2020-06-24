@@ -61,8 +61,11 @@ INSTALLED_APPS = BASE_INSTALLED_APPS + [
 
     # Local
     'apps.categories',
+    'apps.authors',
     'apps.books',
     'apps.users',
+    'apps.support',
+    'apps.chatrooms',
 
     # file cleanup on model delete
     'django_cleanup.apps.CleanupConfig',

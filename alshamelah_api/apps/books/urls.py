@@ -5,14 +5,16 @@ from rest_framework_extensions.routers import (
 )
 
 from .views import BookViewSet, BookMarkViewSet, BookAudioViewSet, BookCommentViewSet, BookHighlightViewSet, \
-    BookPdfViewSet, \
-    BookRatingViewSet, BookReviewViewSet, authors_view, category_books_view, ReadViewSet, FavoriteViewSet, \
-    SuggestionsViewSet, user_listens_view, user_downloads_view
+    BookPdfViewSet, BookReviewViewSet, category_books_view, user_reads_view, FavoriteViewSet, \
+    SuggestionsViewSet, user_listens_view, user_downloads_view, user_books_view, PopularBooksView, PopularBooksViewSet
 
 router = DefaultRouter()
 
 books_router = router.register(
     r'books', BookViewSet, 'books'
+)
+popular_books_router = router.register(
+    r'books/popular', PopularBooksViewSet, 'popular_books'
 )
 book_marks_routes = books_router.register(
     r'marks', BookMarkViewSet, 'book_marks',
@@ -39,19 +41,14 @@ book_pdf_routes = books_router.register(
     r'pdf', BookPdfViewSet, 'book_pdf',
     parents_query_lookups=['book']
 )
-
-book_rating_routes = books_router.register(
-    r'rating', BookRatingViewSet, 'book_rating',
-    parents_query_lookups=['book']
-)
+# book_rating_routes = books_router.register(
+#     r'rating', BookRatingViewSet, 'book_rating',
+#     parents_query_lookups=['book']
+# )
 book_reviews_routes = books_router.register(
     r'reviews', BookReviewViewSet, 'book_reviews',
 
     parents_query_lookups=['book']
-)
-
-user_reads_router = router.register(
-    r'user/read', ReadViewSet, 'reads'
 )
 
 user_favorites_router = router.register(
@@ -63,9 +60,11 @@ user_suggestions_router = router.register(
 )
 
 urlpatterns = [
-    path(r"authors/", authors_view, name="authors"),
     path(r"categories/<category_id>/books/", category_books_view, name="category_books"),
+    path(r"user/books/", user_books_view, name="user_books"),
+    path(r"user/reads/", user_reads_view, name="user_reads"),
     path(r"user/downloads/", user_downloads_view, name="user_downloads"),
     path(r"user/listens/", user_listens_view, name="user_listens"),
+    path(r"books/popular/", PopularBooksView.as_view(), name="popular_books"),
     url(r'', include(router.urls))
 ]

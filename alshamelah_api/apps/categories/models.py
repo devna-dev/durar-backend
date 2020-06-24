@@ -3,9 +3,11 @@ import os
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from ..core.models import BaseModel
 
-class Category(models.Model):
-    def path(self, filename):
+
+class Category(BaseModel):
+    def get_path(self, filename):
         return os.path.join(
             self.path,
             'image',
@@ -14,13 +16,14 @@ class Category(models.Model):
 
     name = models.CharField(max_length=100, verbose_name=_(u'name'), null=False, blank=False)
     image = models.ImageField(
-        upload_to=path,
+        upload_to=get_path,
         blank=True,
         null=True
     )
 
     class Meta:
         verbose_name_plural = "Categories"
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -43,8 +46,8 @@ class Category(models.Model):
         super(Category, self).save(*args, **kwargs)
 
 
-class SubCategory(models.Model):
-    def path(self, filename):
+class SubCategory(BaseModel):
+    def get_path(self, filename):
         return os.path.join(
             self.path,
             'image',
@@ -53,7 +56,7 @@ class SubCategory(models.Model):
 
     name = models.CharField(max_length=100, verbose_name=_(u'name'), null=False, blank=False)
     image = models.ImageField(
-        upload_to=path,
+        upload_to=get_path,
         blank=True,
         null=True
     )
@@ -62,6 +65,7 @@ class SubCategory(models.Model):
 
     class Meta:
         verbose_name_plural = "Sub Categories"
+        ordering = ['name']
 
     def __str__(self):
         return self.name

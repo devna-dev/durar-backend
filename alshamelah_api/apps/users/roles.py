@@ -46,7 +46,11 @@ class AppPermissions(object):
     delete_books = 'delete_books'
     submit_books = 'submit_books'
     submit_audio = 'submit_audio'
+    view_chat_room = 'view_chat_room'
     create_chat_room = 'create_chat_room'
+    edit_chat_room = 'edit_chat_room'
+    delete_chat_room = 'delete_chat_room'
+    edit_user_data = 'edit_user_data'
 
 
 class User(AbstractUserRole):
@@ -83,6 +87,8 @@ class User(AbstractUserRole):
         AppPermissions.edit_password: True,
         AppPermissions.verify_email: True,
         AppPermissions.verify_phone: True,
+        AppPermissions.edit_user_data: True,
+        AppPermissions.view_chat_room: True
     }
 
 
@@ -95,6 +101,8 @@ class Reviewer(AbstractUserRole):
 class ChatAdmin(AbstractUserRole):
     available_permissions = {
         AppPermissions.create_chat_room: True,
+        AppPermissions.edit_chat_room: True,
+        AppPermissions.delete_chat_room: True
     }
 
 
@@ -108,7 +116,9 @@ class Admin(AbstractUserRole):
         AppPermissions.delete_books: True,
         AppPermissions.submit_books: True,
         AppPermissions.submit_audio: True,
-        AppPermissions.create_chat_room: True
+        AppPermissions.create_chat_room: True,
+        AppPermissions.edit_chat_room: True,
+        AppPermissions.delete_chat_room: True
     }
     all_permissions = {}
     all_permissions.update(User.available_permissions)

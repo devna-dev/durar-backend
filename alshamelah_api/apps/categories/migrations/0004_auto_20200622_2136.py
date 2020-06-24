@@ -14,11 +14,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='category',
             name='image',
-            field=models.ImageField(blank=True, null=True, upload_to=apps.categories.models.Category.path),
+            field=models.ImageField(blank=True, null=True, upload_to=apps.categories.models.Category.get_path),
         ),
         migrations.AlterField(
             model_name='subcategory',
             name='image',
-            field=models.ImageField(blank=True, null=True, upload_to=apps.categories.models.SubCategory.path),
+            field=models.ImageField(blank=True, null=True, upload_to=apps.categories.models.SubCategory.get_path),
         ),
     ]

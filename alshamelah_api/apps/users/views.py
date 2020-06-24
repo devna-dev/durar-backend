@@ -6,32 +6,31 @@ from django.contrib.auth import (
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from munch import munchify
-from rest_framework import viewsets, status, views
+from rest_framework import viewsets, status, views, mixins
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .adapter import UserAdapter
 from .enums import OTPStatus
-from .models import EmailOTP, User
+from .models import EmailOTP, User, Note, NotificationSetting, Notification
 from .permissions import CanConfirmEmail
-from .serializers import UserSerializer
+from .serializers import UserSerializer, NoteSerializer, NotificationSerializer, NotificationSettingSerializer
 
 
 # Create your views here.
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Default accepted fields: email, name, phone
-    Default display fields: pk, name, email, phone, birthday, gender, country, address, photo
-    Read-only fields: pk, email
 
-    Returns UserModel fields.
-    """
-    queryset = User.objects.all()
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer
     parser_classes = [MultiPartParser]
+
+    def get_queryset(self):
+        return User.objects.filter(user_id=self.request.user.id)
+
+    # def retrieve(self, request):
+    #     return super(UserViewSet, self).retrieve(request, pk=request.user.id)
 
 
 class ConfirmEmailView(views.APIView):
@@ -104,3 +103,27 @@ class LogoutView(APIView):
 
 
 logout_view = LogoutView.as_view()
+
+
+class UserNoteViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NoteSerializer
+
+    def get_queryset(self):
+        return Note.objects.filter(user_id=self.request.user.id)
+
+
+class UserNotificationSettingViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationSettingSerializer
+
+    def get_queryset(self):
+        return NotificationSetting.objects.filter(user_id=self.request.user.id)
+
+
+class UserNotificationsViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationSerializer
+
+    def get_queryset(self):
+        return Notification.objects.filter(user_id=self.request.user.id)
