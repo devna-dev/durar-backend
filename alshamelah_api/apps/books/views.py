@@ -4,14 +4,8 @@ from __future__ import unicode_literals
 
 import datetime
 
-import coreapi
-import coreschema
-import django_filters
 from django.db.models import Avg, F, Count, Q
-from django.utils.encoding import force_str
 from django.utils.translation import ugettext_lazy as _
-from django_filters.rest_framework import DjangoFilterBackend
-from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from pyarabic.araby import strip_tashkeel
 from rest_framework import viewsets, status, views, mixins
@@ -23,212 +17,18 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rolepermissions.checkers import has_permission
 
+from .filters import BookFilter, BooksFilterBackend, BookParameters, BookPageParameters
 from .models import Book, BookMark, BookComment, BookHighlight, BookAudio, BookPDF, BookReview, BookReviewLike, \
-    ReadBook, FavoriteBook, BookSuggestion, DownloadBook, ListenBook
+    ReadBook, FavoriteBook, BookSuggestion, DownloadBook, ListenBook, SearchBook
 from .permissions import CanManageBook, CanSubmitBook, CanManageBookMark, CanManageBookAudio, \
     CanManageBookComment, CanManageBookHighlight, CanManageBookPdf, CanManageBookReview, CanManageUserData
 from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, BookAudioSerializer, \
     BookCommentSerializer, \
     BookHighlightSerializer, UploadBookSerializer, BookListSerializer, SubmitBookSerializer, \
     BookReviewSerializer, BookReviewLikeSerializer, FavoriteBookSerializer, \
-    BookSuggestionSerializer, DownloadBookSerializer
+    BookSuggestionSerializer, DownloadBookSerializer, BookSearchSerializer, BookSearchListSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
 from ..users.roles import AppPermissions
-
-
-class BookFilter(django_filters.FilterSet):
-    category = django_filters.NumberFilter()
-    author = django_filters.NumberFilter()
-    title = django_filters.CharFilter(lookup_expr='icontains')
-    content = django_filters.CharFilter(lookup_expr='icontains')
-    from_year = django_filters.NumberFilter(field_name='publish_date__year', lookup_expr='gte')
-    to_year = django_filters.NumberFilter(field_name='publish_date__year', lookup_expr='lte')
-
-    class Meta:
-        model = Book
-        fields = ['category', 'author', 'title', 'content']
-
-
-class BooksFilterBackend(DjangoFilterBackend):
-    category_query_param = 'category'
-    category_query_description = _('Filter books by category id')
-    author_query_param = 'author'
-    author_query_description = _('Filter books by author id')
-    title_query_param = 'title'
-    title_query_description = _('Filter books which contains this title')
-    content_query_param = 'content'
-    content_query_description = _('Filter books which contains this content')
-    audio_query_param = 'has_audio'
-    audio_query_description = _('Filter books which has audio files')
-    from_year_query_param = 'from_year'
-    from_year_query_description = _('Filter books published from this year')
-    to_year_query_param = 'to_year'
-    to_year_query_description = _('Filter books published to this year')
-    sort_query_param = 'sort'
-    sort_query_description = _('Sort books by (publish_date, .. etc) "-" is for descending order')
-
-    def get_schema_fields(self, view):
-        fields = [
-            coreapi.Field(
-                name=self.category_query_param,
-                required=False,
-                location='query',
-                schema=coreschema.Integer(
-                    title='Category',
-                    description=force_str(self.category_query_description)
-                )
-            ),
-            coreapi.Field(
-                name=self.author_query_param,
-                required=False,
-                location='query',
-                schema=coreschema.Integer(
-                    title='Author',
-                    description=force_str(self.author_query_description)
-                )
-            ),
-            coreapi.Field(
-                name=self.title_query_param,
-                required=False,
-                location='query',
-                schema=coreschema.String(
-                    title='Title',
-                    description=force_str(self.title_query_description)
-                )
-            ),
-            coreapi.Field(
-                name=self.content_query_param,
-                required=False,
-                location='query',
-                schema=coreschema.String(
-                    title='Title',
-                    description=force_str(self.category_query_description)
-                )
-            ),
-            coreapi.Field(
-                name=self.audio_query_param,
-                required=False,
-                location='query',
-                schema=coreschema.Boolean(
-                    title='Has Audio',
-                    description=force_str(self.audio_query_description)
-                )
-            ),
-            coreapi.Field(
-                name=self.from_year_query_param,
-                required=False,
-                location='query',
-                schema=coreschema.Integer(
-                    title='From Year',
-                    description=force_str(self.from_year_query_description)
-                )
-            ),
-            coreapi.Field(
-                name=self.to_year_query_param,
-
-                required=False,
-                location='query',
-                schema=coreschema.Integer(
-                    title='To Year',
-                    description=force_str(self.to_year_query_description)
-                )
-            ),
-            coreapi.Field(
-                name=self.sort_query_param,
-                required=False,
-                location='query',
-                schema=coreschema.Enum(
-                    title='Sort by',
-                    description=force_str(self.sort_query_description),
-                    enum=['publish_date', 'add_date', 'author', 'has_audio', 'pages', 'downloads', 'reads', 'rate',
-                          'searches',
-                          '-publish_date', '-add_date', '-author', '-has_audio', '-pages', '-downloads', '-reads',
-                          '-rate',
-                          '-searches'
-                          ]
-                )
-            ),
-        ]
-        return fields
-
-    def get_schema_operation_parameters(self, view):
-        parameters = [
-            {
-                'name': self.category_query_param,
-                'required': False,
-                'in': 'query',
-                'description': force_str(self.category_query_description),
-                'schema': {
-                    'type': 'integer',
-                },
-            }, {
-                'name': self.author_query_param,
-                'required': False,
-                'in': 'query',
-                'description': force_str(self.author_query_description),
-                'schema': {
-                    'type': 'integer',
-                },
-            }, {
-                'name': self.title_query_param,
-                'required': False,
-                'in': 'query',
-                'description': force_str(self.title_query_description),
-                'schema': {
-                    'type': 'string',
-                },
-            }, {
-                'name': self.content_query_param,
-                'required': False,
-                'in': 'query',
-                'description': force_str(self.content_query_description),
-                'schema': {
-                    'type': 'string',
-                },
-            }, {
-                'name': self.audio_query_param,
-                'required': False,
-                'in': 'query',
-                'description': force_str(self.audio_query_description),
-                'schema': {
-                    'type': 'boolean',
-                },
-            }, {
-                'name': self.from_year_query_param,
-                'required': False,
-                'in': 'query',
-                'description': force_str(self.from_year_query_description),
-                'schema': {
-                    'type': 'integer',
-                },
-            }, {
-                'name': self.to_year_query_param,
-                'required': False,
-                'in': 'query',
-                'description': force_str(self.to_year_query_description),
-                'schema': {
-                    'type': 'integer',
-                },
-            }, {
-                'name': self.sort_query_param,
-                'required': False,
-                'in': 'query',
-                'description': force_str(self.sort_query_description),
-                'schema': {
-                    'type': 'string',
-                },
-            }
-        ]
-        return parameters
-
-
-BookParameters = [openapi.Parameter('tashkeel', openapi.IN_QUERY, description="View with tashkeel", required=False,
-                                    type=openapi.TYPE_BOOLEAN), ]
-
-BookPageParameters = [openapi.Parameter('tashkeel', openapi.IN_QUERY, description="View with tashkeel", required=False,
-                                        type=openapi.TYPE_BOOLEAN),
-                      openapi.Parameter('page', openapi.IN_QUERY, description="Get page", required=False,
-                                        type=openapi.TYPE_INTEGER, default=None), ]
 
 
 class BookViewSet(viewsets.ModelViewSet):
@@ -248,7 +48,7 @@ class BookViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.action == 'list':
             return Book.objects.filter(approved=True).prefetch_related('category', 'reviews', 'downloads',
-                                                                       'listens', 'searches', 'book_media', 'readers')
+                                                                       'listens', 'book_media', 'readers')
         return self.queryset
 
     def filter_queryset(self, queryset):
@@ -283,10 +83,10 @@ class BookViewSet(viewsets.ModelViewSet):
             return queryset.annotate(read_count=Count('readers')).order_by(F('read_count').asc(nulls_last=False))
         if ordering == '-reads':
             return queryset.annotate(read_count=Count('readers')).order_by(F('read_count').desc(nulls_last=True))
-        if ordering == 'searches':
-            return queryset.annotate(search_count=Count('searches')).order_by(F('search_count').asc(nulls_last=False))
-        if ordering == '-searches':
-            return queryset.annotate(search_count=Count('searches')).order_by(F('search_count').desc(nulls_last=True))
+        # if ordering == 'searches':
+        #     return queryset.annotate(search_count=Count('searches')).order_by(F('search_count').asc(nulls_last=False))
+        # if ordering == '-searches':
+        #     return queryset.annotate(search_count=Count('searches')).order_by(F('search_count').desc(nulls_last=True))
         if ordering == 'has_audio':
             return queryset.annotate(has_audio=Count('book_media', filter=Q(book_media__type='audio') & Q(
                 book_media__approved=True))).order_by(F('has_audio').asc(nulls_last=True))
@@ -311,6 +111,17 @@ class BookViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         request.encoding = 'utf-8'
+        if request.user.id and request.query_params.keys():
+            keys = list(request.query_params.keys())
+            non_filter_keys = ['sort', 'page', 'page_size']
+            for key in non_filter_keys:
+                if key in keys:
+                    keys.remove(key)
+            if len(keys) > 0:
+                serializer_context = {'request': request}
+                search = BookSearchSerializer(data=request.query_params, context=serializer_context)
+                if search.is_valid():
+                    search.save()
         return super(BookViewSet, self).list(request, args, kwargs)
 
     @swagger_auto_schema(manual_parameters=BookParameters)
@@ -751,3 +562,22 @@ class PopularBooksViewSet(viewsets.GenericViewSet):
         return Response(recent_serializer.data,
                         status=status.HTTP_200_OK) if page is None else self.get_paginated_response(
             recent_serializer.data)
+
+
+class SearchesViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    permission_classes = (CanManageUserData,)
+
+    @property
+    def pagination_class(self):
+        if 'offset' in self.request.query_params:
+            return CustomLimitOffsetPagination
+        else:
+            return CustomPageNumberPagination
+
+    def get_queryset(self):
+        return SearchBook.objects.filter(user_id=self.request.user.id)
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return BookSearchListSerializer
+        return BookSearchSerializer

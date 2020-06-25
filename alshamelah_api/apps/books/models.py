@@ -236,11 +236,28 @@ class ListenBook(BaseModel):
 class SearchBook(BaseModel):
     user = models.ForeignKey('users.User', related_name='searches', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, related_name='searches', verbose_name=_(u'Book'), null=False,
-                             on_delete=models.CASCADE)
+
+    title = models.CharField(max_length=100, verbose_name=_(u'Title'), null=True, blank=True)
+    content = models.CharField(max_length=100, verbose_name=_(u'Content'), null=True, blank=True)
+    author = models.ForeignKey('authors.Author', related_name='searches', verbose_name=_(u'Author'), null=True,
+                               on_delete=models.SET_NULL)
+    category = models.ForeignKey('categories.Category', related_name='searches', verbose_name=_(u'Category'), null=True,
+                                 on_delete=models.SET_NULL)
+    sub_category = models.ForeignKey('categories.SubCategory', related_name='searches', verbose_name=_(u'Sub Category'),
+                                     null=True,
+                                     on_delete=models.SET_NULL)
+    has_audio = models.BooleanField(verbose_name=_('Has Audio'), null=True, default=None)
+    from_year = models.IntegerField(verbose_name=_('From Year'), null=True)
+    to_year = models.IntegerField(verbose_name=_('To Year'), null=True)
+    sort = models.CharField(max_length=100, verbose_name=_('Sort'), null=True)
+    page = models.IntegerField(verbose_name=_('Page'), null=True)
+    page_size = models.IntegerField(verbose_name=_('Page Size'), null=True)
 
     def __str__(self):
-        return self.user.name + ":" + self.book.title
+        return self.user.name + " search @ " + str(self.creation_time)
+
+    class Meta:
+        ordering = ['-creation_time']
 
 
 class BookSuggestion(BaseModel):

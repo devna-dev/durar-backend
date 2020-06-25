@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.utils import json
 
 from .models import Book, BookMark, BookAudio, BookPDF, BookComment, BookHighlight, BookReview, \
-    BookReviewLike, ReadBook, FavoriteBook, DownloadBook, ListenBook, BookSuggestion
+    BookReviewLike, ReadBook, FavoriteBook, DownloadBook, ListenBook, BookSuggestion, SearchBook
 from ..authors.serializers import AuthorSerializer
 from ..categories.serializers import CategorySerializer, SubCategorySerializer
 
@@ -39,7 +39,7 @@ class BookListSerializer(serializers.ModelSerializer):
     readers = serializers.SerializerMethodField('get_readers')
     downloads = serializers.SerializerMethodField('get_downloads')
     listens = serializers.SerializerMethodField('get_listens')
-    searches = serializers.SerializerMethodField('get_searches')
+    # searches = serializers.SerializerMethodField('get_searches')
     has_audio = serializers.SerializerMethodField('does_have_audio')
     category = CategorySerializer()
     sub_category = SubCategorySerializer()
@@ -48,7 +48,7 @@ class BookListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = ['id', 'title', 'author', 'category', 'sub_category', 'rating', 'page_count', 'downloads', 'listens',
-                  'readers', 'searches', 'has_audio']
+                  'readers', 'has_audio']
 
     @staticmethod
     def get_average_rating(book):
@@ -66,9 +66,9 @@ class BookListSerializer(serializers.ModelSerializer):
     def get_listens(book):
         return book.listens.count()
 
-    @staticmethod
-    def get_searches(book):
-        return book.searches.count()
+    # @staticmethod
+    # def get_searches(book):
+    #     return book.searches.count()
 
     @staticmethod
     def does_have_audio(book):
@@ -327,6 +327,31 @@ class BookSuggestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BookSuggestion
+        fields = '__all__'
+
+    read_only_fields = ['user']
+
+
+class BookSearchListSerializer(serializers.ModelSerializer):
+    category = CategorySerializer()
+    sub_category = SubCategorySerializer()
+    author = AuthorSerializer()
+
+    class Meta:
+        model = SearchBook
+        fields = '__all__'
+
+
+class BookSearchSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    def validate_has_audio(self, has_audio):
+        if 'has_audio' not in self.initial_data.keys():
+            return None
+        return has_audio
+
+    class Meta:
+        model = SearchBook
         fields = '__all__'
 
     read_only_fields = ['user']
