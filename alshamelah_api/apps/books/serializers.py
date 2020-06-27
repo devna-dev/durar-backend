@@ -4,10 +4,11 @@ from django.db.models import Avg
 from django.utils.translation import ugettext_lazy as _
 from munch import munchify
 from rest_framework import serializers
+from rest_framework.reverse import reverse_lazy
 from rest_framework.utils import json
 
 from .models import Book, BookMark, BookAudio, BookPDF, BookComment, BookHighlight, BookReview, \
-    BookReviewLike, ReadBook, FavoriteBook, DownloadBook, ListenBook, BookSuggestion, SearchBook
+    BookReviewLike, ReadBook, FavoriteBook, DownloadBook, ListenBook, BookSuggestion, SearchBook, ListenProgress
 from ..authors.serializers import AuthorSerializer
 from ..categories.serializers import CategorySerializer, SubCategorySerializer
 
@@ -39,6 +40,8 @@ class BookListSerializer(serializers.ModelSerializer):
     readers = serializers.SerializerMethodField('get_readers')
     downloads = serializers.SerializerMethodField('get_downloads')
     listens = serializers.SerializerMethodField('get_listens')
+    pdf = serializers.SerializerMethodField('get_pdf')
+    download_url = serializers.SerializerMethodField('get_download_url')
     # searches = serializers.SerializerMethodField('get_searches')
     has_audio = serializers.SerializerMethodField('does_have_audio')
     category = CategorySerializer()
@@ -48,7 +51,7 @@ class BookListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = ['id', 'title', 'author', 'category', 'sub_category', 'rating', 'page_count', 'downloads', 'listens',
-                  'readers', 'has_audio']
+                  'readers', 'has_audio', 'pdf', 'download_url']
 
     @staticmethod
     def get_average_rating(book):
@@ -73,6 +76,15 @@ class BookListSerializer(serializers.ModelSerializer):
     @staticmethod
     def does_have_audio(book):
         return book.book_media.filter(approved=True, type='audio').exists()
+
+    @staticmethod
+    def get_pdf(book):
+        pdf = book.book_media.filter(approved=True, type='pdf').first()
+        return pdf.url if pdf else None
+
+    def get_download_url(self, book):
+        url = reverse_lazy('books-download', request=self.context.get('request'), kwargs={'pk': book.id})
+        return url if url else None
 
 
 class UploadBookSerializer(serializers.ModelSerializer):
@@ -160,10 +172,28 @@ class BookSerializer(serializers.ModelSerializer):
                     }
 
 
+class BookDetailSerializer(BookSerializer):
+    category = CategorySerializer()
+    sub_category = SubCategorySerializer()
+    author = AuthorSerializer()
+
+    class Meta:
+        model = Book
+        fields = '__all__'
+
+    read_only_fields = ['content', 'data', 'uploader', 'approved', 'page_count']
+    extra_kwargs = {'title': {'required': True},
+                    'content': {'required': False, 'allow_null': True},
+                    'data': {'required': False, 'allow_null': True},
+                    'author': {'required': True},
+                    }
+
+
 class DownloadBookSerializer(serializers.ModelSerializer):
     content_no_tashkeel = serializers.SerializerMethodField('get_no_tashkeel_content')
     category = CategorySerializer()
     sub_category = SubCategorySerializer()
+    author = AuthorSerializer()
 
     class Meta:
         model = Book
@@ -319,7 +349,33 @@ class ListenBookSerializer(serializers.ModelSerializer):
         model = ListenBook
         fields = '__all__'
 
-    read_only_fields = ['user']
+    read_only_fields = ['user', 'book']
+
+
+class ListenProgressSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    book = serializers.HiddenField(default=CurrentBookDefault())
+
+    class Meta:
+        model = ListenProgress
+        exclude = ['listen']
+        extra_kwargs = {'audio': {'required': True},
+                        'progress': {'required': True},
+                        }
+
+    def create(self, validated_data):
+        user = validated_data.get('user', None)
+        book = validated_data.get('book', None)
+        audio = validated_data.get('audio', None)
+        if user and book and audio:
+            listen, created = ListenBook.objects.get_or_create(user=user, book=book)
+            file_progress, created = ListenProgress.objects.update_or_create(
+                listen=listen,
+                audio=audio,
+                defaults={'progress': validated_data.get('progress', None)}
+            )
+            return file_progress
+        return self.Meta.model.objects.none()
 
 
 class BookSuggestionSerializer(serializers.ModelSerializer):

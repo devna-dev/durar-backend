@@ -66,6 +66,7 @@ INSTALLED_APPS = BASE_INSTALLED_APPS + [
     'apps.users',
     'apps.support',
     'apps.chatrooms',
+    'apps.sms',
 
     # file cleanup on model delete
     'django_cleanup.apps.CleanupConfig',
@@ -271,6 +272,19 @@ EMAIL_HOST_USER = 'al-shamelah@internet-svc.com'
 EMAIL_HOST_PASSWORD = 'J*Pb4ATyb4@_KCn8'
 EMAIL_PORT = 8889
 DEFAULT_FROM_EMAIL = 'al-shamelah@internet-svc.com'
+
+# Twilio Keys
+TWILIO_ACCOUNT_SID = 'AC1e118a01b05f894be3c76cab4334be3b'
+TWILIO_AUTH_TOKEN = '758c7916964f29f8764abcca829e69ef'
+TWILIO_NUMBER = '+15704131570'
+
+# My Fatoorah
+PAYMENT_TEST_URL = 'https://apitest.myfatoorah.com'
+MYFATOORAH_TEST_API_KEY = '7Fs7eBv21F5xAocdPvvJ-sCqEyNHq4cygJrQUFvFiWEexBUPs4AkeLQxH4pzsUrY3Rays7GVA6SojFCz2DMLXSJVqk8NG-plK-cZJetwWjgwLPub_9tQQohWLgJ0q2invJ5C5Imt2ket_-JAlBYLLcnqp_WmOfZkBEWuURsBVirpNQecvpedgeCx4VaFae4qWDI_uKRV1829KCBEH84u6LYUxh8W_BYqkzXJYt99OlHTXHegd91PLT-tawBwuIly46nwbAs5Nt7HFOozxkyPp8BW9URlQW1fE4R_40BXzEuVkzK3WAOdpR92IkV94K_rDZCPltGSvWXtqJbnCpUB6iUIn1V-Ki15FAwh_nsfSmt_NQZ3rQuvyQ9B3yLCQ1ZO_MGSYDYVO26dyXbElspKxQwuNRot9hi3FIbXylV3iN40-nCPH4YQzKjo5p_fuaKhvRh7H8oFjRXtPtLQQUIDxk-jMbOp7gXIsdz02DrCfQIihT4evZuWA6YShl6g8fnAqCy8qRBf_eLDnA9w-nBh4Bq53b1kdhnExz0CMyUjQ43UO3uhMkBomJTXbmfAAHP8dZZao6W8a34OktNQmPTbOHXrtxf6DS-oKOu3l79uX_ihbL8ELT40VjIW3MJeZ_-auCPOjpE3Ax4dzUkSDLCljitmzMagH2X8jN8-AYLl46KcfkBV'
+PAYMENT_URL = 'https://api.myfatoorah.com'
+MYFATOORAH_API_KEY = 'tLdM_-f-n8W4PmD755_P4R3H9wyh3_Ky_TvDyZP2OZfODV8FkPR5jgMaIdUt0xvxxNcT9b13gX8ozRRecyKJPa_dIrbdFYdF6U97KCBYDvpjEOLcmJLxAdLPQOW96oLSF0RWVeJJrpu5fZbzscyk7bXm1BvvFI2R7rQgN1CE8lWdsotT6J7XvJQ0rzwPxAfNgx4uQR1pAG3VABcqY3ivz14vxG4RFB7buvy9IQLZSAoXv06qjPs1G3D8un2TKGYGMEPDcIKqFserOnL6lLZ5qLALXcLEhX9nBL4v_XOLmHsNoatHQxzpgabgrHoL9rZ_9sBlV-dPRoYVOPXN1DDXD2H2jlFFb0GZHl45uPxSbITaWiRgJHdj8OUjuXIte3R9ocE0LHmjvVtXzGbzXcTUYzR2QxesS_4QKN3UKt0Bs4jPgtb3NYKJZYmq5TPRDT4vfGmpOv1yWtwinQWZXGL_yAtXoOHKBTH7W9Gc2Wm2Ugc_4G53kBtTzG-UpodBvUgfFrVCj0q8DroUKGpHRRFIwAOljbT8ywkqMJQqUaWv3bhbZtLujhQQtVq_-C84dg_Cjtj9ggxpLQE-h9TbSTp5pGWjvFkeuvkRku3Z32S9bUmkgZhl4Nl7zvm-zWHqlcQUKna-LV7s56BN26KIAsnFSip3MrNZrxE5TukuW3C8mNH2WNSh'
+# CALLBACK_URL=https://tutor-app-dev.dunice-testing.com/api/v1/payment/redirect-success
+# ERROR_URL=https://tutor-app-dev.dunice-testing.com/api/v1/payment/redirect-fail
 
 # LOGGING
 # ------------------------------------------------------------------------------

@@ -29,6 +29,10 @@ user_urls = list(url for url in rest_patterns if url.name == 'rest_user_details'
 urlpatterns = [
     path(r"accounts/verify-email/<key>/", views.confirm_email,
          name="account_confirm_email"),
+    path(r"accounts/verify-phone/", views.VerifyPhoneView.as_view(),
+         name="account_verify_phone"),
+    path(r"accounts/verify-phone/<key>/", views.ConfirmPhoneView.as_view(),
+         name="account_confirm_phone"),
     url(r'accounts/', include(accounts_urls)),
     url(r'', include(user_urls)),
     path(r"accounts/logout/", views.logout_view,

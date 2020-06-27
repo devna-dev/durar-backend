@@ -33,8 +33,6 @@ class User(AbstractUser):
     )
 
     name = models.CharField(max_length=50, verbose_name=_(u'Name'), null=True, blank=True)
-    phone_code = models.CharField(max_length=50, verbose_name=_(u'Phone code'),
-                                  blank=True, null=True)
     phone = models.CharField(max_length=50, verbose_name=_(u'Phone number'),
                              blank=True, null=True)
     phone_verified = models.BooleanField(verbose_name=_(u'Phone Verified'), default=False)

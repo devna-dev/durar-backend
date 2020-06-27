@@ -14,12 +14,11 @@ from rest_framework.views import APIView
 
 from .adapter import UserAdapter
 from .enums import OTPStatus
-from .models import EmailOTP, User, Note, NotificationSetting, Notification
-from .permissions import CanConfirmEmail
+from .models import EmailOTP, User, Note, NotificationSetting, Notification, PhoneOTP
+from .permissions import CanConfirmEmail, CanConfirmPhone
 from .serializers import UserSerializer, NoteSerializer, NotificationSerializer, NotificationSettingSerializer
-
-
 # Create your views here.
+from ..sms.models import SMS
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -47,13 +46,13 @@ class ConfirmEmailView(views.APIView):
             email = EmailAddress.objects.filter(user_id=user_id, primary=True).first()
             email.verified = True
             email.save()
-            return Response(True)
+            return Response(1)
         if confirmation in [OTPStatus.Expired, OTPStatus.Used]:
-            EmailOTP.objects.generate(user_id)
             email = EmailAddress.objects.filter(user_id=user_id, primary=True).first()
             if not email:
                 return Response(_('Invalid verification code'),
                                 status=status.HTTP_400_BAD_REQUEST)
+            EmailOTP.objects.generate(user_id)
             data = munchify({'email_address': email})
             UserAdapter(self.request).send_confirmation_mail(self.request, data, False)
             return Response(_('Verification code expired, we have sent another code to your email'),
@@ -71,6 +70,66 @@ class ConfirmEmailView(views.APIView):
 
 
 confirm_email = ConfirmEmailView.as_view()
+
+
+class ConfirmPhoneView(views.APIView):
+    permission_classes = [CanConfirmPhone]
+
+    def put(self, *args, **kwargs):
+        if not self.request.user or not self.request.user.id:
+            return Response(_('Invalid request'),
+                            status=status.HTTP_400_BAD_REQUEST)
+        user_id = self.request.user.id
+        user = User.objects.filter(id=user_id).first()
+        self.object = confirmation = self.get_object()
+
+        if confirmation == OTPStatus.Verified:
+            user.phone_verified = True
+            user.save()
+            return Response(1)
+        if confirmation in [OTPStatus.Expired, OTPStatus.Used]:
+            if not user:
+                return Response(_('Invalid verification code'),
+                                status=status.HTTP_400_BAD_REQUEST)
+            SMS.objects.send_verification(self.request.user, user.phone, self.request)
+            return Response(_('Verification code expired, we have sent another code to your phone'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(_('Invalid verification code'),
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    def get_object(self, queryset=None):
+        key = self.kwargs['key']
+        confirm = PhoneOTP.objects.verify(self.request.user.id, key)
+        return confirm
+
+    queryset = PhoneOTP.objects.all()
+
+
+class VerifyPhoneView(views.APIView):
+    permission_classes = [CanConfirmPhone]
+
+    def get(self, *args, **kwargs):
+        if not self.request.user or not self.request.user.id:
+            return Response(_('Invalid request'),
+                            status=status.HTTP_400_BAD_REQUEST)
+        user_id = self.request.user.id
+        user = User.objects.filter(id=user_id).first()
+        if user.phone_verified:
+            return Response(_('Phone already verified'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if user.phone:
+            sent = SMS.objects.send_verification(self.request.user, user.phone, self.request)
+            return Response(1)
+
+        return Response(_('Invalid user phone'),
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    queryset = PhoneOTP.objects.all()
 
 
 class LogoutView(APIView):

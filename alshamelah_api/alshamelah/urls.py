@@ -23,6 +23,7 @@ api_v1_urls = [
     path('', include('apps.authors.urls')),
     path('', include('apps.support.urls')),
     path('', include('apps.chatrooms.urls')),
+    path('', include('apps.sms.urls')),
 ]
 
 urlpatterns += [

@@ -26,7 +26,8 @@ from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, 
     BookCommentSerializer, \
     BookHighlightSerializer, UploadBookSerializer, BookListSerializer, SubmitBookSerializer, \
     BookReviewSerializer, BookReviewLikeSerializer, FavoriteBookSerializer, \
-    BookSuggestionSerializer, DownloadBookSerializer, BookSearchSerializer, BookSearchListSerializer
+    BookSuggestionSerializer, DownloadBookSerializer, BookSearchSerializer, BookSearchListSerializer, \
+    BookDetailSerializer, ListenProgressSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
 from ..users.roles import AppPermissions
 
@@ -96,9 +97,31 @@ class BookViewSet(viewsets.ModelViewSet):
 
         return queryset.order_by(ordering)
 
+    def dispatch(self, request, *args, **kwargs):
+        book_id = kwargs.get('pk', None)
+        if book_id:
+            self.book = get_object_or_404(Book, pk=book_id)
+        if self.request.user.id:
+            self.user = self.request.user
+        return super(BookViewSet, self).dispatch(request, *args, **kwargs)
+
+    def get_serializer_context(self):
+        """
+        Extra context provided to the serializer class.
+        """
+        context = super(BookViewSet, self).get_serializer_context()
+        if hasattr(self, 'book') and hasattr(self, 'user'):
+            context.update(
+                book=self.book,
+                user=self.user
+            )
+        return context
+
     def get_serializer_class(self):
         if self.action == 'create':
             return UploadBookSerializer
+        if self.action == 'retrieve':
+            return BookDetailSerializer
         if self.action == 'list':
             return BookListSerializer
         if self.action == 'submit':
@@ -107,6 +130,8 @@ class BookViewSet(viewsets.ModelViewSet):
             return DownloadBookSerializer
         if self.action == 'listen':
             return BookAudioSerializer
+        if self.action == 'listen_progress':
+            return ListenProgressSerializer
         return BookSerializer
 
     def list(self, request, *args, **kwargs):
@@ -170,6 +195,13 @@ class BookViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(BookAudio.objects.filter(approved=True, book_id=pk), many=True)
         if has_permission(request.user, AppPermissions.edit_user_data) and serializer.data:
             ListenBook.objects.update_or_create(book_id=pk, user_id=request.user.id)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='listen/progress', permission_classes=[CanManageUserData])
+    def listen_progress(self, request, pk=None, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

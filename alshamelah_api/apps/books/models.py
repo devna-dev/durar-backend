@@ -2,6 +2,7 @@ import os
 
 from django.conf import settings
 from django.contrib.postgres.fields import JSONField
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
@@ -231,6 +232,16 @@ class ListenBook(BaseModel):
 
     def __str__(self):
         return self.user.name + ":" + self.book.title
+
+
+class ListenProgress(BaseModel):
+    listen = models.ForeignKey(ListenBook, related_name='file_progress', verbose_name=_('File Progress'), null=False,
+                               on_delete=models.CASCADE)
+    audio = models.ForeignKey(BookAudio, related_name='file_progress', verbose_name=_(u'Audio'), null=True,
+                              on_delete=models.SET_NULL)
+    progress = models.PositiveSmallIntegerField(verbose_name=_('Progress'), null=True, validators=[MinValueValidator(0),
+                                                                                                   MaxValueValidator(
+                                                                                                       100)])
 
 
 class SearchBook(BaseModel):
