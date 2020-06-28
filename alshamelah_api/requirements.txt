@@ -34,3 +34,4 @@ coreapi==2.3.3
 easy-thumbnails==2.7
 django-cleanup==5.0.0
 twilio==6.43
+python-dateutil==2.8.1

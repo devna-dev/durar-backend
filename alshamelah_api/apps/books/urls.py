@@ -7,13 +7,22 @@ from rest_framework_extensions.routers import (
 from .views import BookViewSet, BookMarkViewSet, BookAudioViewSet, BookCommentViewSet, BookHighlightViewSet, \
     BookPdfViewSet, BookReviewViewSet, category_books_view, user_reads_view, FavoriteViewSet, \
     SuggestionsViewSet, user_listens_view, user_downloads_view, user_books_view, PopularBooksView, PopularBooksViewSet, \
-    SearchesViewSet
+    SearchesViewSet, PaperViewSet, ThesisViewSet, ActivitiesBooksView
 
 router = DefaultRouter()
 
 books_router = router.register(
     r'books', BookViewSet, 'books'
 )
+
+papers_router = router.register(
+    r'activities/papers', PaperViewSet, 'papers'
+)
+
+thesis_router = router.register(
+    r'activities/thesis', ThesisViewSet, 'thesis'
+)
+
 popular_books_router = router.register(
     r'books/popular', PopularBooksViewSet, 'popular_books'
 )
@@ -71,5 +80,6 @@ urlpatterns = [
     path(r"user/downloads/", user_downloads_view, name="user_downloads"),
     path(r"user/listens/", user_listens_view, name="user_listens"),
     path(r"books/popular/", PopularBooksView.as_view(), name="popular_books"),
+    path(r"activities/", ActivitiesBooksView.as_view(), name="activities"),
     url(r'', include(router.urls))
 ]

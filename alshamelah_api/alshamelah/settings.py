@@ -67,6 +67,7 @@ INSTALLED_APPS = BASE_INSTALLED_APPS + [
     'apps.support',
     'apps.chatrooms',
     'apps.sms',
+    'apps.site_data',
 
     # file cleanup on model delete
     'django_cleanup.apps.CleanupConfig',
@@ -154,7 +155,7 @@ JWT_AUTH = {
 ACCOUNT_LOGOUT_ON_GET = False
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
-    'EXCLUDE_URL_NAMES': ['rest_verify_email', 'rest_logout'],
+    'EXCLUDE_URL_NAMES': ['rest_verify_email', 'rest_logout', 'sms_update_status'],
     'api_version': '1',
     'relative_paths': True,
     'doc_expansion': 'none',

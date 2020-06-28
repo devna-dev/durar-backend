@@ -8,7 +8,7 @@ from .views import AuthorViewSet
 
 router = DefaultRouter()
 
-categories_router = router.register(
+authors_router = router.register(
     r'authors', AuthorViewSet, 'authors'
 )
 

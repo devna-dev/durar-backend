@@ -49,7 +49,7 @@ class User(AbstractUser):
                                blank=True)
     photo = ThumbnailerImageField(
         upload_to=get_path,
-        blank=True,
+        blank=False,
         null=True,
         resize_source=dict(size=(100, 100),
                            verbose_name=_(u'Photo'))
@@ -63,8 +63,12 @@ class User(AbstractUser):
             return None
         return os.path.join('users', str(self.pk))
 
+    @property
+    def photo_url(self):
+        return self.photo.url if self.photo else os.path.join(settings.MEDIA_URL, 'users', 'avatar.jpg')
+
     def __str__(self):
-        return self.email
+        return '{name} ({email})'.format(name=self.name if self.name else '', email=self.email)
 
     def save(self, *args, **kwargs):
         if self.pk is None:

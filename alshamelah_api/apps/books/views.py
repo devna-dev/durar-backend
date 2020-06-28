@@ -19,7 +19,7 @@ from rolepermissions.checkers import has_permission
 
 from .filters import BookFilter, BooksFilterBackend, BookParameters, BookPageParameters
 from .models import Book, BookMark, BookComment, BookHighlight, BookAudio, BookPDF, BookReview, BookReviewLike, \
-    ReadBook, FavoriteBook, BookSuggestion, DownloadBook, ListenBook, SearchBook
+    ReadBook, FavoriteBook, BookSuggestion, DownloadBook, ListenBook, SearchBook, Paper, Thesis
 from .permissions import CanManageBook, CanSubmitBook, CanManageBookMark, CanManageBookAudio, \
     CanManageBookComment, CanManageBookHighlight, CanManageBookPdf, CanManageBookReview, CanManageUserData
 from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, BookAudioSerializer, \
@@ -27,7 +27,10 @@ from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, 
     BookHighlightSerializer, UploadBookSerializer, BookListSerializer, SubmitBookSerializer, \
     BookReviewSerializer, BookReviewLikeSerializer, FavoriteBookSerializer, \
     BookSuggestionSerializer, DownloadBookSerializer, BookSearchSerializer, BookSearchListSerializer, \
-    BookDetailSerializer, ListenProgressSerializer
+    ListenProgressSerializer, UserBookListSerializer, UploadPaperSerializer, PaperListSerializer, SubmitPaperSerializer, \
+    UploadThesisSerializer, SubmitThesisSerializer, ThesisListSerializer
+from ..chatrooms.models import Seminar, Discussion
+from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
 from ..users.roles import AppPermissions
 
@@ -121,7 +124,7 @@ class BookViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return UploadBookSerializer
         if self.action == 'retrieve':
-            return BookDetailSerializer
+            return BookListSerializer
         if self.action == 'list':
             return BookListSerializer
         if self.action == 'submit':
@@ -149,14 +152,33 @@ class BookViewSet(viewsets.ModelViewSet):
                     search.save()
         return super(BookViewSet, self).list(request, args, kwargs)
 
-    @swagger_auto_schema(manual_parameters=BookParameters)
     def retrieve(self, request, *args, **kwargs):
+        """
+            Get book details without content for view
+        """
         request.encoding = 'utf-8'
         # Client can control the page using this query parameter.
         book = self.get_object()
         tashkeel = request.query_params.get('tashkeel', None) != 'false'
         if not tashkeel:
-            book.content = strip_tashkeel(book.content)
+            content = list(book.content)
+            for page in content:
+                page['text'] = strip_tashkeel(page['text'])
+            book.content = content
+
+        serializer = self.get_serializer(book)
+
+        return Response(serializer.data)
+
+    @swagger_auto_schema(manual_parameters=BookParameters)
+    @action(detail=True, methods=['get'], permission_classes=[])
+    def details(self, request, *args, **kwargs):
+        """
+            Get all book details for edit
+        """
+        request.encoding = 'utf-8'
+        # Client can control the page using this query parameter.
+        book = self.get_object()
 
         serializer = self.get_serializer(book)
 
@@ -175,7 +197,7 @@ class BookViewSet(viewsets.ModelViewSet):
         if not tashkeel and data:
             data = strip_tashkeel(data)
         if has_permission(request.user, AppPermissions.edit_user_data):
-            ReadBook.objects.update_or_create(book_id=pk, user_id=request.user.id)
+            ReadBook.objects.update_or_create(book_id=pk, user_id=request.user.id, page=page)
         return Response(data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
@@ -203,6 +225,61 @@ class BookViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PaperViewSet(viewsets.ModelViewSet):
+    queryset = Paper.objects.filter(approved=True).prefetch_related('category', 'book_media')
+    permission_classes = (CanManageBook,)
+    parser_classes = [MultiPartParser]
+    serializer_class = PaperListSerializer
+
+    @property
+    def pagination_class(self):
+        if 'offset' in self.request.query_params:
+            return CustomLimitOffsetPagination
+        else:
+            return CustomPageNumberPagination
+
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            return PaperListSerializer
+        if self.action == 'submit':
+            return SubmitPaperSerializer
+        return UploadPaperSerializer
+
+    def list(self, request, *args, **kwargs):
+        request.encoding = 'utf-8'
+        return super(PaperViewSet, self).list(request, args, kwargs)
+
+    @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
+    def submit(self, request, pk=None):
+        self.partial_update(request, {'pk': pk, })
+        return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class ThesisViewSet(viewsets.ModelViewSet):
+    queryset = Thesis.objects.filter(approved=True).prefetch_related('category', 'book_media')
+    permission_classes = (CanManageBook,)
+    parser_classes = [MultiPartParser]
+
+    @property
+    def pagination_class(self):
+        if 'offset' in self.request.query_params:
+            return CustomLimitOffsetPagination
+        else:
+            return CustomPageNumberPagination
+
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            return ThesisListSerializer
+        if self.action == 'submit':
+            return SubmitThesisSerializer
+        return UploadThesisSerializer
+
+    @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
+    def submit(self, request, pk=None):
+        self.partial_update(request, {'pk': pk, })
+        return Response(status=status.HTTP_202_ACCEPTED)
 
 
 class NestedBookViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
@@ -264,12 +341,6 @@ class BookPdfViewSet(NestedBookViewSet):
     serializer_class = BookPDFSerializer
     permission_classes = (CanManageBookPdf,)
     book_query = 'book'
-
-
-# class BookRatingViewSet(NestedBookViewSet):
-#     serializer_class = BookRatingSerializer
-#     permission_classes = (CanManageBookRating,)
-#     book_query = 'book'
 
 
 class BookReviewViewSet(NestedBookViewSet):
@@ -383,16 +454,17 @@ class UserBooksView(views.APIView):
     permission_classes = [CanManageUserData]
 
     def get(self, *args, **kwargs):
-        reads_serializer = BookListSerializer(instance=self.queryset.filter(readers__user_id=self.request.user.id),
-                                              many=True)
-        listens_serializer = BookListSerializer(instance=self.queryset.filter(listens__user_id=self.request.user.id),
-                                                many=True)
-        downloads_serializer = BookListSerializer(
+        reads_serializer = UserBookListSerializer(instance=self.queryset.filter(readers__user_id=self.request.user.id),
+                                                  many=True, context={'request': self.request})
+        listens_serializer = UserBookListSerializer(
+            instance=self.queryset.filter(listens__user_id=self.request.user.id),
+            many=True, context={'request': self.request})
+        downloads_serializer = UserBookListSerializer(
             instance=self.queryset.filter(downloads__user_id=self.request.user.id),
-            many=True)
-        favorites_serializer = BookListSerializer(
+            many=True, context={'request': self.request})
+        favorites_serializer = UserBookListSerializer(
             instance=self.queryset.filter(favorite_books__user_id=self.request.user.id),
-            many=True)
+            many=True, context={'request': self.request})
 
         return Response({
             'reads': reads_serializer.data,
@@ -415,7 +487,7 @@ class UserReadsView(views.APIView):
 
     def get(self, *args, **kwargs):
         data = self.queryset.filter(readers__user_id=self.request.user.id)
-        serializer = BookListSerializer(instance=data, many=True)
+        serializer = UserBookListSerializer(instance=data, many=True, context={'request': self.request})
         return Response(serializer.data,
                         status=status.HTTP_200_OK)
 
@@ -432,7 +504,7 @@ class UserDownloadsView(views.APIView):
 
     def get(self, *args, **kwargs):
         data = self.queryset.filter(downloads__user_id=self.request.user.id)
-        serializer = BookListSerializer(instance=data, many=True)
+        serializer = UserBookListSerializer(instance=data, many=True, context={'request': self.request})
         return Response(serializer.data,
                         status=status.HTTP_200_OK)
 
@@ -449,7 +521,7 @@ class UserListens(views.APIView):
 
     def get(self, *args, **kwargs):
         data = self.queryset.filter(listens__user_id=self.request.user.id)
-        serializer = BookListSerializer(instance=data, many=True)
+        serializer = UserBookListSerializer(instance=data, many=True, context={'request': self.request})
         return Response(serializer.data,
                         status=status.HTTP_200_OK)
 
@@ -501,22 +573,22 @@ class PopularBooksView(views.APIView):
                 readers_count=Count('readers',
                                     filter=Q(creation_time__year=year) & Q(creation_time__month=month))).order_by(
                 F('readers_count').desc(nulls_last=True))[:10],
-            many=True)
+            many=True, context={'request': self.request})
         listens_serializer = BookListSerializer(
             instance=self.get_queryset().filter(listens__isnull=False).annotate(
                 listens_count=Count('listens',
                                     filter=Q(creation_time__year=year) & Q(creation_time__month=month))).order_by(
                 F('listens_count').desc(nulls_last=True))[:10],
-            many=True)
+            many=True, context={'request': self.request})
         downloads_serializer = BookListSerializer(
             instance=self.get_queryset().filter(downloads__isnull=False).annotate(
                 downloads_count=Count('downloads',
                                       filter=Q(creation_time__year=year) & Q(creation_time__month=month))).order_by(
                 F('downloads_count').desc(nulls_last=True))[:10],
-            many=True)
+            many=True, context={'request': self.request})
 
         recent_serializer = BookListSerializer(instance=self.get_queryset().order_by(F('creation_time').desc())[:10],
-                                               many=True)
+                                               many=True, context={'request': self.request})
 
         return Response({
             'reads': reads_serializer.data,
@@ -549,7 +621,8 @@ class PopularBooksViewSet(viewsets.GenericViewSet):
                                 filter=Q(creation_time__year=year) & Q(creation_time__month=month))).order_by(
             F('readers_count').desc(nulls_last=True))
         page = self.paginate_queryset(query)
-        reads_serializer = BookListSerializer(instance=page if page is not None else query, many=True)
+        reads_serializer = BookListSerializer(instance=page if page is not None else query, many=True,
+                                              context={'request': self.request})
 
         return Response(reads_serializer.data,
                         status=status.HTTP_200_OK) if page is None else self.get_paginated_response(
@@ -564,7 +637,8 @@ class PopularBooksViewSet(viewsets.GenericViewSet):
                                 filter=Q(creation_time__year=year) & Q(creation_time__month=month))).order_by(
             F('listens_count').desc(nulls_last=True))
         page = self.paginate_queryset(query)
-        listens_serializer = BookListSerializer(instance=page if page is not None else query, many=True)
+        listens_serializer = BookListSerializer(instance=page if page is not None else query, many=True,
+                                                context={'request': self.request})
 
         return Response(listens_serializer.data,
                         status=status.HTTP_200_OK) if page is None else self.get_paginated_response(
@@ -579,7 +653,8 @@ class PopularBooksViewSet(viewsets.GenericViewSet):
                                   filter=Q(creation_time__year=year) & Q(creation_time__month=month))).order_by(
             F('downloads_count').desc(nulls_last=True))
         page = self.paginate_queryset(query)
-        downloads_serializer = BookListSerializer(instance=page if page is not None else query, many=True)
+        downloads_serializer = BookListSerializer(instance=page if page is not None else query, many=True,
+                                                  context={'request': self.request})
 
         return Response(downloads_serializer.data,
                         status=status.HTTP_200_OK) if page is None else self.get_paginated_response(
@@ -589,7 +664,8 @@ class PopularBooksViewSet(viewsets.GenericViewSet):
     def recent(self, request, *args, **kwargs):
         query = self.get_queryset().order_by(F('creation_time').desc())
         page = self.paginate_queryset(query)
-        recent_serializer = BookListSerializer(instance=page if page is not None else query, many=True)
+        recent_serializer = BookListSerializer(instance=page if page is not None else query, many=True,
+                                               context={'request': self.request})
 
         return Response(recent_serializer.data,
                         status=status.HTTP_200_OK) if page is None else self.get_paginated_response(
@@ -613,3 +689,32 @@ class SearchesViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.
         if self.action == 'list':
             return BookSearchListSerializer
         return BookSearchSerializer
+
+
+class ActivitiesBooksView(views.APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request, *args, **kwargs):
+        seminars_serializer = SeminarListSerializer(
+            instance=Seminar.objects.order_by(
+                F('date').desc(nulls_last=True), F('from_time').desc(nulls_last=True))[:10],
+            many=True, context={'request': self.request})
+        discussions_serializer = DiscussionListSerializer(
+            instance=Discussion.objects.order_by(
+                F('date').desc(nulls_last=True), F('from_time').desc(nulls_last=True))[:10],
+            many=True, context={'request': self.request})
+        thesis_serializer = ThesisListSerializer(
+            instance=Thesis.objects.filter(approved=True).order_by(F('creation_time').desc(nulls_last=True))[:10],
+            many=True, context={'request': self.request})
+
+        papers_serializer = PaperListSerializer(
+            instance=Paper.objects.filter(approved=True).order_by(F('creation_time').desc(nulls_last=True))[:10],
+            many=True, context={'request': self.request})
+
+        return Response({
+            'seminars': seminars_serializer.data,
+            'discussions': discussions_serializer.data,
+            'thesis': thesis_serializer.data,
+            'papers': papers_serializer.data
+        },
+            status=status.HTTP_200_OK)

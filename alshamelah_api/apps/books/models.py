@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from django.conf import settings
 from django.contrib.postgres.fields import JSONField
@@ -9,11 +10,17 @@ from django.utils.translation import ugettext_lazy as _
 from easy_thumbnails.fields import ThumbnailerImageField
 from model_utils import Choices
 
-from .managers import BookAudioManager, BookPDFManager
+from .managers import BookAudioManager, BookPDFManager, PaperManager, ThesisManager, BookManager
 from ..core.models import BaseModel
 
 
 class Book(BaseModel):
+    objects = BookManager()
+    BOOK_TYPE_CHOICES = Choices(
+        ('book', _(u'Book')),
+        ('paper', _(u'Paper')),
+        ('thesis', _(u'Thesis')),
+    )
 
     def get_path(self, filename):
         return os.path.join(
@@ -24,7 +31,7 @@ class Book(BaseModel):
 
     title = models.CharField(max_length=100, verbose_name=_(u'Title'), null=False, blank=False)
     content = JSONField(verbose_name=_(u'Content'), null=True, blank=True)
-    data = JSONField(null=True)
+    data = JSONField(null=True, blank=True)
     author = models.ForeignKey('authors.Author', related_name='books', verbose_name=_(u'Author'), null=True,
                                on_delete=models.SET_NULL)
     uploader = models.ForeignKey('users.User', related_name='books', verbose_name=_(u'Uploader'), null=True,
@@ -39,15 +46,21 @@ class Book(BaseModel):
     publish_date = models.DateField(null=True, blank=True, verbose_name=_(u'Publish Date'))
     cover_image = ThumbnailerImageField(
         upload_to=get_path,
-        blank=True,
+        blank=False,
         null=True,
         resize_source=dict(size=(100, 100))
     )
     # read_count = models.PositiveIntegerField(blank=True, null=True, verbose_name=_(u'Read Count'))
     # download_count = models.PositiveIntegerField(blank=True, null=True, verbose_name=_(u'Download Count'))
     page_count = models.PositiveIntegerField(blank=True, null=True, verbose_name=_(u'Page Count'))
+    description = models.CharField(max_length=2000, verbose_name=_(u'Description'), null=True, blank=False)
+    type = models.CharField(max_length=10, choices=BOOK_TYPE_CHOICES, verbose_name=_(u'Type'))
 
     # search_count = models.PositiveIntegerField(blank=True, null=True, verbose_name=_(u'Search Count'))
+    @property
+    def image(self):
+        return self.cover_image.url if self.cover_image else os.path.join(settings.MEDIA_URL, 'books',
+                                                                          'default-cover.jpg')
 
     @property
     def pages(self):
@@ -57,7 +70,7 @@ class Book(BaseModel):
     def path(self):
         if not self.pk:
             return None
-        return os.path.join('books', str(self.pk))
+        return os.path.join(self.type, str(self.pk))
 
     def __str__(self):
         return self.title
@@ -73,16 +86,33 @@ class Book(BaseModel):
 
         super(Book, self).save(*args, **kwargs)
 
+    def __init__(self, *args, **kwargs):
+        super(Book, self).__init__(*args, **kwargs)
+        self.type = 'book'
 
-# class BookRating(BaseModel):
-#
-#     user = models.ForeignKey('users.User', related_name='book_ratings', verbose_name=_(u'User'), null=False,
-#                              on_delete=models.CASCADE)
-#     book = models.ForeignKey(Book, related_name='book_ratings', verbose_name=_(u'Book'), null=False,
-#                              on_delete=models.CASCADE)
-#
-#     def __str__(self):
-#         return self.rating
+
+class Paper(Book):
+    objects = PaperManager()
+
+    class Meta:
+        proxy = True
+        ordering = ['-creation_time']
+
+    def __init__(self, *args, **kwargs):
+        super(Paper, self).__init__(*args, **kwargs)
+        self.type = 'paper'
+
+
+class Thesis(Book):
+    objects = ThesisManager()
+
+    class Meta:
+        proxy = True
+        ordering = ['-creation_time']
+
+    def __init__(self, *args, **kwargs):
+        super(Thesis, self).__init__(*args, **kwargs)
+        self.type = 'thesis'
 
 
 class BookReview(BaseModel):
@@ -209,6 +239,7 @@ class ReadBook(BaseModel):
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='readers', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
+    page = models.PositiveSmallIntegerField(verbose_name=_('Page reached'), null=True, blank=False)
 
     def __str__(self):
         return self.user.name + ":" + self.book.title
@@ -276,7 +307,10 @@ class BookSuggestion(BaseModel):
                              on_delete=models.CASCADE)
     title = models.CharField(max_length=100, verbose_name=_(u'Title'), null=False, blank=False)
     author = models.CharField(max_length=1000, verbose_name=_(u'Author'), null=False, blank=False)
-    publish_date = models.DateField(null=True, blank=True, verbose_name=_(u'Publish Date'))
+    publish_year = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name=_(u'Publish Year'),
+                                                    validators=[MinValueValidator(0),
+                                                                MaxValueValidator(
+                                                                    datetime.now().year)])
     url = models.URLField(verbose_name=_(u'Book Url'), null=False, blank=False)
 
     def __str__(self):

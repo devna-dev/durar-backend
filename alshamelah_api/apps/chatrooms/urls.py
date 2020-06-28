@@ -4,12 +4,21 @@ from rest_framework_extensions.routers import (
     ExtendedDefaultRouter as DefaultRouter
 )
 
-from .views import ChatRoomsViewSet
+from .views import SeminarsViewSet, DiscussionsViewSet, DiscussionsRegistrationViewSet, SeminarRegistrationViewSet
 
 router = DefaultRouter()
 
-categories_router = router.register(
-    r'chatrooms', ChatRoomsViewSet, 'chatrooms'
+seminars_registration_router = router.register(
+    r'activities/seminars/registration', SeminarRegistrationViewSet, 'seminars_registration'
+)
+discussions_registration_router = router.register(
+    r'activities/discussions/registration', DiscussionsRegistrationViewSet, 'discussions_registration'
+)
+seminars_router = router.register(
+    r'activities/seminars', SeminarsViewSet, 'seminars'
+)
+discussions_router = router.register(
+    r'activities/discussions', DiscussionsViewSet, 'discussions'
 )
 
 urlpatterns = [

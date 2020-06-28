@@ -1,4 +1,7 @@
+import datetime
+
 from allauth.account.models import EmailAddress
+from dateutil import relativedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.hashers import make_password
@@ -42,13 +45,19 @@ class NotificationSettingSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     email_verified = serializers.SerializerMethodField('is_email_verified')
     permissions = serializers.SerializerMethodField('get_permissions')
-    notification_settings = NotificationSettingSerializer(source='notification_setting')
+    notification_settings = NotificationSettingSerializer(source='notification_setting', read_only=True)
+    age = serializers.SerializerMethodField()
+    photo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = UserModel
-        read_only_fields = ['email_verified', 'phone_verified']
+        read_only_fields = ['email_verified', 'phone_verified', 'photo_url']
         fields = ['id', 'email', 'name', 'birthday', 'phone', 'gender', 'country', 'address', 'photo',
-                  'email_verified', 'phone_verified', 'permissions', 'notification_settings']
+                  'email_verified', 'phone_verified', 'permissions', 'notification_settings', 'age', 'photo_url']
+        extra_kwargs = {
+            'photo': {'required': False, 'allow_null': True, 'write_only': True},
+            'notification_settings': {'required': False, 'allow_null': True, 'read_only': True},
+        }
 
     def create(self, validated_data):
         password = validated_data.pop('password')
@@ -70,6 +79,23 @@ class UserSerializer(serializers.ModelSerializer):
             'can_submit_audio': has_permission(user, AppPermissions.submit_audio),
             'can_create_chatroom': has_permission(user, AppPermissions.create_chat_room),
         }
+
+    def get_age(self, user):
+        if not user or not user.birthday:
+            return None
+        # Get the current date
+        now = datetime.datetime.utcnow()
+        now = now.date()
+
+        # Get the difference between the current date and the birthday
+        age = relativedelta.relativedelta(now, user.birthday)
+        age = age.years
+        return age
+
+    def get_photo_url(self, user):
+        if self.context.get('request') is None: return None
+        url = self.context.get('request').build_absolute_uri(user.photo_url) if user.photo_url else None
+        return url if url else None
 
 
 class LoginSerializer(serializers.Serializer):
