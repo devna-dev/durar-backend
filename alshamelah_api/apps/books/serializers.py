@@ -7,9 +7,10 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse_lazy
 from rest_framework.utils import json
 
-from .models import Book, BookMark, BookAudio, BookPDF, BookComment, BookHighlight, BookReview, \
+from .models import Book, BookMark, BookAudio, BookPDF, BookNote, BookReview, \
     BookReviewLike, ReadBook, FavoriteBook, DownloadBook, ListenBook, BookSuggestion, SearchBook, ListenProgress, Paper, \
     Thesis
+from .util import ArabicUtilities
 from ..authors.serializers import AuthorSerializer
 from ..categories.serializers import CategorySerializer, SubCategorySerializer
 
@@ -398,9 +399,57 @@ class BookMarkSerializer(NestedBookSerializer):
         return mark
 
 
-class BookCommentSerializer(NestedBookSerializer):
+class BookNoteSerializer(NestedBookSerializer):
+    tashkeel_on = serializers.BooleanField()
+
     class Meta(NestedBookSerializer.Meta):
-        model = BookComment
+        model = BookNote
+        read_only_fields = ['user', 'tashkeel_start', 'tashkeel_end']
+        extra_kwargs = {'tashkeel_start': {'required': False, 'read_only': True},
+                        'tashkeel_end': {'required': False, 'read_only': True},
+                        }
+
+    def validate_page(self, page):
+        if len(self.context.get('book').pages) < page:
+            raise serializers.ValidationError(_('Invalid page number'))
+        self.page_data = self.context.get('book').pages[page]['text']
+        return page
+
+    def create(self, validated_data):
+        if validated_data['tashkeel_on']:
+            mark_position = ArabicUtilities.get_no_tashkeel_position(self.page_data, validated_data['start'],
+                                                                     validated_data['end'])
+            validated_data['tashkeel_start'] = validated_data['start']
+            validated_data['tashkeel_end'] = validated_data['end']
+            validated_data['start'] = mark_position.start
+            validated_data['end'] = mark_position.end
+        else:
+            mark_position = ArabicUtilities.get_tashkeel_position(self.page_data, validated_data['start'],
+                                                                  validated_data['end'])
+            validated_data['tashkeel_start'] = mark_position.start
+            validated_data['tashkeel_end'] = mark_position.end
+
+        del validated_data['tashkeel_on']
+        self.data.pop('tashkeel_on')
+        return super(BookNoteSerializer, self).create(validated_data)
+
+    def update(self, instance, validated_data):
+        if validated_data['tashkeel_on']:
+            mark_position = ArabicUtilities.get_no_tashkeel_position(self.page_data, validated_data['start'],
+                                                                     validated_data['end'])
+            validated_data['tashkeel_start'] = validated_data['start']
+            validated_data['tashkeel_end'] = validated_data['end']
+            validated_data['start'] = mark_position.start
+            validated_data['end'] = mark_position.end
+        else:
+            mark_position = ArabicUtilities.get_tashkeel_position(self.page_data, validated_data['start'],
+                                                                  validated_data['end'])
+            validated_data['tashkeel_start'] = mark_position.start
+            validated_data['tashkeel_end'] = mark_position.end
+
+        del validated_data['tashkeel_on']
+        self.data.pop('tashkeel_on')
+        return super(BookNoteSerializer, self).update(instance, validated_data)
 
 
 class BookReviewSerializer(NestedBookSerializer):
@@ -414,12 +463,6 @@ class BookReviewSerializer(NestedBookSerializer):
             book=validated_data.get('book', None),
             defaults=validated_data)
         return review
-
-
-class BookHighlightSerializer(NestedBookSerializer):
-    class Meta(NestedBookSerializer.Meta):
-        model = BookHighlight
-        # fields = NestedBookSerializer.Meta.fields + ['page', 'line', 'start', 'end']
 
 
 class BookAudioSerializer(NestedBookSerializer):

@@ -70,7 +70,7 @@ class Book(BaseModel):
     def path(self):
         if not self.pk:
             return None
-        return os.path.join(self.type, str(self.pk))
+        return os.path.join(self.type + ('s' if not self.type.endswith('s') else ''), str(self.pk))
 
     def __str__(self):
         return self.title
@@ -144,17 +144,21 @@ class BookReviewLike(BaseModel):
         return self.user.name + ' like:' + self.review.comment
 
 
-class BookComment(BaseModel):
-    user = models.ForeignKey('users.User', related_name='book_comments', verbose_name=_(u'User'), null=False,
+class BookNote(BaseModel):
+    user = models.ForeignKey('users.User', related_name='book_notes', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, related_name='book_comments', verbose_name=_(u'Book'), null=False,
+    book = models.ForeignKey(Book, related_name='book_notes', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
-    comment = models.TextField(verbose_name=_(u'Comment'), null=False, blank=False)
-    page = models.PositiveSmallIntegerField(verbose_name=_(u'Page'))
-    line = models.PositiveSmallIntegerField(verbose_name=_(u'Line'))
+    title = models.CharField(max_length=200, verbose_name=_('Title'), null=True, blank=True)
+    note = models.TextField(verbose_name=_(u'Note'), null=True, blank=False)
+    page = models.PositiveSmallIntegerField(verbose_name=_(u'Page'), null=False)
+    start = models.PositiveIntegerField(verbose_name=_(u'Start'), null=False)
+    end = models.PositiveIntegerField(verbose_name=_(u'End'), null=False)
+    tashkeel_start = models.PositiveIntegerField(verbose_name=_(u'Tashkeel Start'), null=False)
+    tashkeel_end = models.PositiveIntegerField(verbose_name=_(u'Tashkeel End'), null=False)
 
     def __str__(self):
-        return self.comment
+        return self.note
 
 
 class BookMark(BaseModel):
@@ -166,19 +170,6 @@ class BookMark(BaseModel):
 
     def __str__(self):
         return self.page
-
-
-class BookHighlight(BaseModel):
-    user = models.ForeignKey('users.User', related_name='book_highlights', verbose_name=_(u'User'), null=False,
-                             on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, related_name='book_highlights', verbose_name=_(u'Book'), null=False,
-                             on_delete=models.CASCADE)
-    page = models.PositiveSmallIntegerField(verbose_name=_(u'Page'))
-    start = models.PositiveIntegerField(verbose_name=_(u'Start'))
-    highlighted_text = models.TextField(verbose_name=_(u'Highlighted Text'))
-
-    def __str__(self):
-        return "page:{page} highlighted:{highlight} ".format(page=self.page, highlight=self.highlighted_text)
 
 
 class BookMedia(BaseModel):
@@ -316,6 +307,18 @@ class BookSuggestion(BaseModel):
     def __str__(self):
         return self.user.name + ":" + self.title + ('(%s)' % self.author)
 
+
+class MarkPosition(object):
+
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+
+    def __str__(self):
+        return {'start': self.start, 'end': self.end}
+
+    def __repr__(self):
+        return str(self)
 
 @receiver(models.signals.post_delete, sender=Book)
 def auto_delete_file_on_delete(sender, instance, **kwargs):

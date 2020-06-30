@@ -17,20 +17,20 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rolepermissions.checkers import has_permission
 
-from .filters import BookFilter, BooksFilterBackend, BookParameters, BookPageParameters
-from .models import Book, BookMark, BookComment, BookHighlight, BookAudio, BookPDF, BookReview, BookReviewLike, \
+from .filters import BookFilter, BooksFilterBackend, BookParameters, BookPageParameters, BookPageSearchParameters
+from .models import Book, BookMark, BookNote, BookAudio, BookPDF, BookReview, BookReviewLike, \
     ReadBook, FavoriteBook, BookSuggestion, DownloadBook, ListenBook, SearchBook, Paper, Thesis
 from .permissions import CanManageBook, CanSubmitBook, CanManageBookMark, CanManageBookAudio, \
-    CanManageBookComment, CanManageBookHighlight, CanManageBookPdf, CanManageBookReview, CanManageUserData
+    CanManageBookComment, CanManageBookPdf, CanManageBookReview, CanManageUserData
 from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, BookAudioSerializer, \
-    BookCommentSerializer, \
-    BookHighlightSerializer, UploadBookSerializer, BookListSerializer, SubmitBookSerializer, \
+    BookNoteSerializer, UploadBookSerializer, BookListSerializer, SubmitBookSerializer, \
     BookReviewSerializer, BookReviewLikeSerializer, FavoriteBookSerializer, \
     BookSuggestionSerializer, DownloadBookSerializer, BookSearchSerializer, BookSearchListSerializer, \
     ListenProgressSerializer, UserBookListSerializer, UploadPaperSerializer, PaperListSerializer, SubmitPaperSerializer, \
     UploadThesisSerializer, SubmitThesisSerializer, ThesisListSerializer
-from ..chatrooms.models import Seminar, Discussion
-from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer
+from .util import ArabicUtilities
+from ..chatrooms.models import Seminar, Discussion, ChatRoom
+from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer, ChatRoomListSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
 from ..users.roles import AppPermissions
 
@@ -194,10 +194,30 @@ class BookViewSet(viewsets.ModelViewSet):
         if not page or not book.pages or page > len(book.pages):
             return Response(_('Page not found'), status=status.HTTP_400_BAD_REQUEST)
         data = book.pages[page]['text']
-        if not tashkeel and data:
-            data = strip_tashkeel(data)
+        if request.user.id is None or not book.book_notes.exists():
+            if not tashkeel and data:
+                data = strip_tashkeel(data)
+        else:
+            data = ArabicUtilities.get_highlighted_text(book.book_notes.filter(user_id=request.user.id, page=page),
+                                                        data, page, tashkeel)
         if has_permission(request.user, AppPermissions.edit_user_data):
             ReadBook.objects.update_or_create(book_id=pk, user_id=request.user.id, page=page)
+        return Response(data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(manual_parameters=BookPageSearchParameters)
+    @action(detail=True, methods=['get'], permission_classes=[])
+    def search(self, request, pk=None):
+        book = self.get_object()
+        tashkeel = request.query_params.get('tashkeel', None) != 'false'
+        word = request.query_params.get('word', None)
+        data = list(
+            [{'page': index, 'text':
+                (strip_tashkeel(page['text']) if tashkeel else page['text'])
+                    .replace(word, '{tag_start}{word}{tag_end}'.format(word=word,
+                                                                       tag_start=ArabicUtilities.highlight_tag_start,
+                                                                       tag_end=ArabicUtilities.tag_end))}
+             for index, page in
+             enumerate(book.pages) if word in page['text']])
         return Response(data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
@@ -311,22 +331,13 @@ class BookMarkViewSet(NestedBookViewSet):
         return BookMark.objects.filter(user_id=self.request.user.id)
 
 
-class BookCommentViewSet(NestedBookViewSet):
-    serializer_class = BookCommentSerializer
+class BookNoteViewSet(NestedBookViewSet):
+    serializer_class = BookNoteSerializer
     permission_classes = (CanManageBookComment,)
     book_query = 'book'
 
     def get_queryset(self):
-        return BookComment.objects.filter(user_id=self.request.user.id)
-
-
-class BookHighlightViewSet(NestedBookViewSet):
-    serializer_class = BookHighlightSerializer
-    permission_classes = (CanManageBookHighlight,)
-    book_query = 'book'
-
-    def get_queryset(self):
-        return BookHighlight.objects.filter(user_id=self.request.user.id)
+        return BookNote.objects.filter(user_id=self.request.user.id)
 
 
 class BookAudioViewSet(NestedBookViewSet):
@@ -711,10 +722,15 @@ class ActivitiesBooksView(views.APIView):
             instance=Paper.objects.filter(approved=True).order_by(F('creation_time').desc(nulls_last=True))[:10],
             many=True, context={'request': self.request})
 
+        latest_serializer = ChatRoomListSerializer(
+            instance=ChatRoom.objects.all().order_by(F('date').desc(nulls_last=True))[:5],
+            many=True, context={'request': self.request})
+
         return Response({
             'seminars': seminars_serializer.data,
             'discussions': discussions_serializer.data,
             'thesis': thesis_serializer.data,
-            'papers': papers_serializer.data
+            'papers': papers_serializer.data,
+            'last_activities': latest_serializer.data
         },
             status=status.HTTP_200_OK)

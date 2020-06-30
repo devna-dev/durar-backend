@@ -4,7 +4,7 @@ from rest_framework_extensions.routers import (
     ExtendedDefaultRouter as DefaultRouter
 )
 
-from .views import BookViewSet, BookMarkViewSet, BookAudioViewSet, BookCommentViewSet, BookHighlightViewSet, \
+from .views import BookViewSet, BookMarkViewSet, BookAudioViewSet, BookNoteViewSet, \
     BookPdfViewSet, BookReviewViewSet, category_books_view, user_reads_view, FavoriteViewSet, \
     SuggestionsViewSet, user_listens_view, user_downloads_view, user_books_view, PopularBooksView, PopularBooksViewSet, \
     SearchesViewSet, PaperViewSet, ThesisViewSet, ActivitiesBooksView
@@ -31,14 +31,9 @@ book_marks_routes = books_router.register(
     parents_query_lookups=['book'],
 )
 
-book_comments_routes = books_router.register(
-    r'comments', BookCommentViewSet, 'book_comments',
+book_notes_routes = books_router.register(
+    r'notes', BookNoteViewSet, 'book_notes',
 
-    parents_query_lookups=['book']
-)
-
-book_highlights_routes = books_router.register(
-    r'highlights', BookHighlightViewSet, 'book_highlights',
     parents_query_lookups=['book']
 )
 

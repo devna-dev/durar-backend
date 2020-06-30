@@ -13,11 +13,11 @@ class SMSManager(models.Manager):
         otp = PhoneOTP.objects.generate(user.id)
         content = 'Your ' + settings.SITE_NAME + ' verification code is: ' + otp.code
 
-        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        client = Client(settings.TWILIO.ACCOUNT_SID, settings.TWILIO.AUTH_TOKEN)
 
         message = client.messages.create(
             body=content,
-            from_=settings.TWILIO_NUMBER,
+            from_=settings.TWILIO.NUMBER,
             status_callback=reverse('sms_update_status', request=request),
             to=phone
         )

@@ -83,7 +83,7 @@ class SeminarsViewSet(viewsets.ModelViewSet):
             return CustomPageNumberPagination
 
     def get_serializer_class(self):
-        if self.action == 'list':
+        if self.action in ['list', 'retrieve']:
             return SeminarListSerializer
         return SeminarSerializer
 
@@ -134,7 +134,7 @@ class DiscussionsViewSet(viewsets.ModelViewSet):
             return CustomPageNumberPagination
 
     def get_serializer_class(self):
-        if self.action == 'list':
+        if self.action in ['list', 'retrieve']:
             return DiscussionListSerializer
         return DiscussionSerializer
 

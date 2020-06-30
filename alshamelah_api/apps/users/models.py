@@ -110,7 +110,8 @@ class PhoneOTP(OTP):
 
 
 class Note(models.Model):
-    user = models.OneToOneField(User, related_name='notes', verbose_name=_(u'Notes'), on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='notes', verbose_name=_(u'Notes'), on_delete=models.CASCADE)
+    title = models.CharField(max_length=200, verbose_name=_('Title'), null=True, blank=True)
     note = models.TextField(verbose_name=_(u'Note'), null=True, blank=True)
     creation_time = models.DateTimeField(auto_now_add=True, null=True)
     last_update_time = models.DateTimeField(auto_now=True, null=True)

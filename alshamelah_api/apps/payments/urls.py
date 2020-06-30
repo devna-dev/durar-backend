@@ -4,12 +4,12 @@ from rest_framework_extensions.routers import (
     ExtendedDefaultRouter as DefaultRouter
 )
 
-from .views import AuthorViewSet
+from .views import PaymentsViewSet
 
 router = DefaultRouter()
 
-categories_router = router.register(
-    r'authors', AuthorViewSet, 'authors'
+payments_router = router.register(
+    r'payments', PaymentsViewSet, 'payments'
 )
 
 urlpatterns = [

@@ -220,3 +220,9 @@ BookPageParameters = [openapi.Parameter('tashkeel', openapi.IN_QUERY, descriptio
                                         type=openapi.TYPE_BOOLEAN),
                       openapi.Parameter('page', openapi.IN_QUERY, description="Get page", required=False,
                                         type=openapi.TYPE_INTEGER, default=None), ]
+
+BookPageSearchParameters = [
+    openapi.Parameter('tashkeel', openapi.IN_QUERY, description="View with tashkeel", required=False,
+                      type=openapi.TYPE_BOOLEAN),
+    openapi.Parameter('word', openapi.IN_QUERY, description="Search for word in book", required=True,
+                      type=openapi.TYPE_STRING, default=None), ]
