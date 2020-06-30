@@ -12,7 +12,7 @@ services:
       - "8000:8000"
       - "25:25"
     env_file:
-      - ./.env.dev
+      - ./.env
     depends_on:
       - db
   db:
