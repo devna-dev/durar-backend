@@ -1,5 +1,4 @@
 version: '3.7'
-
 services:
   web:
     build:
@@ -10,9 +9,10 @@ services:
       - static_volume:/home/app/web/staticfiles
       - media_volume:/home/app/web/mediafiles
     expose:
-      - 8000
+      - "8000:8000"
+      - "25:25"
     env_file:
-      - ./.env.prod
+      - ./.env
     depends_on:
       - db
   db:

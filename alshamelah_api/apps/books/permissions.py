@@ -13,7 +13,7 @@ class CanManageBook(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -44,7 +44,7 @@ class CanManageBook(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """
@@ -84,7 +84,7 @@ class CanSubmitBook(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -107,7 +107,7 @@ class CanSubmitBook(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """
@@ -143,7 +143,7 @@ class CanManageBookRating(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -174,7 +174,7 @@ class CanManageBookRating(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """
@@ -214,7 +214,7 @@ class CanManageBookComment(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -245,7 +245,7 @@ class CanManageBookComment(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """
@@ -285,7 +285,7 @@ class CanManageBookHighlight(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -316,7 +316,7 @@ class CanManageBookHighlight(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """
@@ -356,7 +356,7 @@ class CanManageBookMark(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -387,7 +387,7 @@ class CanManageBookMark(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """
@@ -427,7 +427,7 @@ class CanManageBookAudio(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -458,7 +458,7 @@ class CanManageBookAudio(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """
@@ -498,7 +498,7 @@ class CanManageBookPdf(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -529,7 +529,7 @@ class CanManageBookPdf(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """
@@ -569,7 +569,7 @@ class CanManageBookReview(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -600,7 +600,7 @@ class CanManageBookReview(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """

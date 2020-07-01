@@ -5,3 +5,4 @@ __pycache
 .env.prod
 .env.prod.db
 /alshamelah_api/media/
+/.env

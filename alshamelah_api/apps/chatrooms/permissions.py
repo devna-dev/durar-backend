@@ -13,7 +13,7 @@ class CanManageChatRoom(permissions.IsAuthenticated):
     # book_lookup = 'parent_lookup_book' case of parent child
 
     def has_permission(self, request, view):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         # Allow list to all
         if request.method in ['GET']:
             return True
@@ -46,7 +46,7 @@ class CanManageChatRoom(permissions.IsAuthenticated):
         return False
 
     def has_object_permission(self, request, view, obj):
-        from alshamelah_api.apps.users.roles import AppPermissions
+        from ..users.roles import AppPermissions
         """
         Manages only permissions for editing and deleting the objects
         """
