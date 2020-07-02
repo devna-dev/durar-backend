@@ -458,12 +458,24 @@ class BookReviewSerializer(NestedBookSerializer):
         # fields = NestedBookSerializer.Meta.fields + ['rating']
 
     def create(self, validated_data):
+        # from ..event_history.serializers import BookReviewEventSerializer
         review, created = BookReview.objects.update_or_create(
             user=validated_data.get('user', None),
             book=validated_data.get('book', None),
             defaults=validated_data)
+        # event = BookReviewEventSerializer(change_type=('create' if created else 'update'), review=review,
+        #                                   context={'request': self.context.get('request')})
+        # if event.is_valid():
+        #         event.save()
         return review
 
+
+class UserReviewSerializer(serializers.ModelSerializer):
+    book = BookListSerializer()
+
+    class Meta:
+        model = BookReview
+        exclude = ['user']
 
 class BookAudioSerializer(NestedBookSerializer):
     class Meta(NestedBookSerializer.Meta):

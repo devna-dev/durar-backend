@@ -7,7 +7,7 @@ from rest_framework_extensions.routers import (
 from .views import BookViewSet, BookMarkViewSet, BookAudioViewSet, BookNoteViewSet, \
     BookPdfViewSet, BookReviewViewSet, category_books_view, user_reads_view, FavoriteViewSet, \
     SuggestionsViewSet, user_listens_view, user_downloads_view, user_books_view, PopularBooksView, PopularBooksViewSet, \
-    SearchesViewSet, PaperViewSet, ThesisViewSet, ActivitiesBooksView
+    SearchesViewSet, PaperViewSet, ThesisViewSet, ActivitiesBooksView, UserReviewsViewSet
 
 router = DefaultRouter()
 
@@ -66,6 +66,10 @@ user_suggestions_router = router.register(
 
 user_searches_router = router.register(
     r'user/searches', SearchesViewSet, 'searches'
+)
+
+user_reviews_router = router.register(
+    r'user/reviews', UserReviewsViewSet, 'user_reviews'
 )
 
 urlpatterns = [

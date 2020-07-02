@@ -27,7 +27,7 @@ from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, 
     BookReviewSerializer, BookReviewLikeSerializer, FavoriteBookSerializer, \
     BookSuggestionSerializer, DownloadBookSerializer, BookSearchSerializer, BookSearchListSerializer, \
     ListenProgressSerializer, UserBookListSerializer, UploadPaperSerializer, PaperListSerializer, SubmitPaperSerializer, \
-    UploadThesisSerializer, SubmitThesisSerializer, ThesisListSerializer
+    UploadThesisSerializer, SubmitThesisSerializer, ThesisListSerializer, UserReviewSerializer
 from .util import ArabicUtilities
 from ..chatrooms.models import Seminar, Discussion, ChatRoom
 from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer, ChatRoomListSerializer
@@ -413,24 +413,6 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     permission_classes = (CanManageUserData,)
     serializer_class = FavoriteBookSerializer
 
-    def dispatch(self, request, *args, **kwargs):
-        book_id = kwargs.get('book_id', None)
-        self.book = get_object_or_404(Book, pk=book_id)
-        self.user = self.request.user
-        return super(FavoriteViewSet, self).dispatch(request, *args, **kwargs)
-
-    def get_serializer_context(self):
-        """
-        Extra context provided to the serializer class.
-        """
-        context = super(FavoriteViewSet, self).get_serializer_context()
-        if hasattr(self, 'user') and hasattr(self, 'book'):
-            context.update(
-                book=self.book,
-                user=self.user
-            )
-        return context
-
     @property
     def pagination_class(self):
         if 'offset' in self.request.query_params:
@@ -701,6 +683,22 @@ class SearchesViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.
             return BookSearchListSerializer
         return BookSearchSerializer
 
+
+class UserReviewsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    permission_classes = (CanManageUserData,)
+
+    @property
+    def pagination_class(self):
+        if 'offset' in self.request.query_params:
+            return CustomLimitOffsetPagination
+        else:
+            return CustomPageNumberPagination
+
+    def get_queryset(self):
+        return BookReview.objects.filter(user_id=self.request.user.id)
+
+    def get_serializer_class(self):
+        return UserReviewSerializer
 
 class ActivitiesBooksView(views.APIView):
     permission_classes = (AllowAny,)
