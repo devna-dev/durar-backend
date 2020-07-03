@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from .models import Payment
 from .permissions import CanManagePayments
 from .serializers import PaymentSerializer, PaymentCreditCardSerializer
+from ..users.services import FCM
 
 
 class PaymentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -28,13 +29,14 @@ class PaymentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.G
         serializer = self.get_serializer(context={'request': request}, data=request.data)
         if serializer.is_valid():
             serializer.save()
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(True, status=status.HTTP_201_CREATED)
 
     @action(detail=True, name='payment-success', permission_classes=[AllowAny])
     def success(self, request, pk=None, *args, **kwargs):
         payment = Payment.objects.filter(pk=pk)
         if payment:
             payment.update(status='success')
+            FCM.notify_payment_success(payment.user)
         return Response(1)
 
     @action(detail=True, name='payment-error', permission_classes=[AllowAny])
@@ -42,4 +44,5 @@ class PaymentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.G
         payment = Payment.objects.filter(pk=pk)
         if payment:
             payment.update(status='fail', payment_response=json.dumps(request.data))
+            FCM.notify_payment_rejected(payment.user)
         return Response(1)

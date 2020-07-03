@@ -32,7 +32,6 @@ class ChatRoom(BaseModel):
         )
 
     title = models.CharField(max_length=100, verbose_name=_(u'Title'), null=False, blank=False)
-    category = models.ForeignKey(RoomType, verbose_name=_(u'Category'), on_delete=models.CASCADE)
     description = models.CharField(max_length=8000, verbose_name=_(u'description'), null=True)
     lecturer = models.CharField(max_length=255, verbose_name=_(u'lecturer'), null=False, blank=False)
     date = models.DateField(verbose_name=_('Date'), null=False)

@@ -33,6 +33,7 @@ from ..chatrooms.models import Seminar, Discussion, ChatRoom
 from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer, ChatRoomListSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
 from ..users.roles import AppPermissions
+from ..users.services import FCM
 
 
 class BookViewSet(viewsets.ModelViewSet):
@@ -202,6 +203,9 @@ class BookViewSet(viewsets.ModelViewSet):
                                                         data, page, tashkeel)
         if has_permission(request.user, AppPermissions.edit_user_data):
             ReadBook.objects.update_or_create(book_id=pk, user_id=request.user.id, page=page)
+        if request.user.id and request.user.notification_setting.device_id:
+            FCM.send('Book reading started', 'You started reading: ' + book.title + ' ',
+                     request.user.notification_setting.device_id)
         return Response(data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(manual_parameters=BookPageSearchParameters)
@@ -223,6 +227,8 @@ class BookViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
     def submit(self, request, pk=None):
         self.partial_update(request, {'pk': pk, })
+        if request.user.id:
+            FCM.notify_book_approved(request.user)
         return Response(status=status.HTTP_202_ACCEPTED)
 
     @action(detail=True, methods=['get'], permission_classes=[])

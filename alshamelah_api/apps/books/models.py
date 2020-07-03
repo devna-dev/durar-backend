@@ -190,7 +190,7 @@ class BookMedia(BaseModel):
     approved = models.BooleanField(verbose_name=_(u'Approved'), default=False)
 
     def __str__(self):
-        return self.type + ":" + self.url.url
+        return self.book.title + '(' + self.type + "):" + self.url.url
 
 
 class BookAudio(BookMedia):
@@ -198,6 +198,7 @@ class BookAudio(BookMedia):
 
     class Meta:
         proxy = True
+        verbose_name_plural = 'Book audio files'
 
     def __init__(self, *args, **kwargs):
         super(BookMedia, self).__init__(*args, **kwargs)
@@ -319,6 +320,7 @@ class MarkPosition(object):
 
     def __repr__(self):
         return str(self)
+
 
 @receiver(models.signals.post_delete, sender=Book)
 def auto_delete_file_on_delete(sender, instance, **kwargs):

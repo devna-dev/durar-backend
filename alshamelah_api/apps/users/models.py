@@ -124,16 +124,28 @@ class NotificationSetting(models.Model):
     last_update_time = models.DateTimeField(auto_now=True, null=True)
     device_id = models.CharField(max_length=255, verbose_name=_(u'Device Id'))
     enabled = models.BooleanField(verbose_name=_(u'Enabled'), default=True, null=True)
-    book_added = models.BooleanField(verbose_name=_(u'Book Added'), default=True, null=True)
+    paper_approved = models.BooleanField(verbose_name=_(u'Paper Approved'), default=True, null=True)
+    thesis_approved = models.BooleanField(verbose_name=_(u'Thesis Approved'), default=True, null=True)
     book_approved = models.BooleanField(verbose_name=_(u'Book Approved'), default=True, null=True)
     audio_approved = models.BooleanField(verbose_name=_(u'Audio Approved'), default=True, null=True)
+    payment_processed = models.BooleanField(verbose_name=_(u'Payment Processed'), default=True, null=True)
+    support_requested = models.BooleanField(verbose_name=_(u'Support Requested'), default=True, null=True)
+    points_awarded = models.BooleanField(verbose_name=_(u'Points Awarded'), default=True, null=True)
+    admin_notifications = models.BooleanField(verbose_name=_(u'Admin Notifications'), default=True, null=True)
 
 
 class Notification(models.Model):
     TYPE_CHOICES = Choices(
-        ('book_added', _(u'Book Added')),
+        # ('book_added', _(u'Book Added')),
         ('book_approved', _(u'Book Approved')),
+        ('paper_approved', _(u'Paper Approved')),
+        ('thesis_approved', _(u'Thesis Approved')),
         ('audio_approved', _(u'Audio Approved')),
+        ('payment_success', _(u'Payment Success')),
+        ('payment_rejected', _(u'Payment Rejected')),
+        ('support_request', _(u'Support Request')),
+        ('points_awarded', _(u'Points awarded')),
+        ('admin_notification', _(u'Admin Notification')),
     )
     user = models.ForeignKey(User, related_name='notifications', verbose_name=_(u'Notifications'),
                              on_delete=models.CASCADE)
@@ -146,6 +158,18 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ['-read', '-creation_time']
+
+
+class CustomNotification(models.Model):
+    users = models.ManyToManyField(User, related_name='custom_notifications',
+                                   verbose_name=_(u'Notify Users \n(with notification enabled)'))
+    creation_time = models.DateTimeField(auto_now_add=True, null=True)
+    last_update_time = models.DateTimeField(auto_now=True, null=True)
+    title = models.CharField(max_length=255, verbose_name=_(u'Title'))
+    message = models.CharField(max_length=1000, verbose_name=_(u'Message'))
+
+    class Meta:
+        ordering = ['-creation_time']
 
 
 @receiver(models.signals.post_delete, sender=User)

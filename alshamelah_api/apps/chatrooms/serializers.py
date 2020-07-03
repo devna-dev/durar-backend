@@ -14,7 +14,7 @@ class ChatRoomTypeSerializer(serializers.ModelSerializer):
 
 
 class ChatRoomListSerializer(serializers.ModelSerializer):
-    category = ChatRoomTypeSerializer()
+    # category = ChatRoomTypeSerializer()
     registered = serializers.SerializerMethodField('is_registered')
     duration = serializers.SerializerMethodField()
     day = serializers.SerializerMethodField()

@@ -9,6 +9,8 @@ from rest_framework.authtoken.models import Token
 from rolepermissions.admin import RolePermissionsUserAdminMixin
 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
+from .models import CustomNotification
+from .services import FCM
 
 User = get_user_model()
 
@@ -40,6 +42,32 @@ class CustomUserAdmin(RolePermissionsUserAdminMixin, UserAdmin):
         #
         #     permissions.queryset = permissions.queryset.filter(codename__in=list(role_permissions.keys()))
         return form
+
+
+@admin.register(CustomNotification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'title',
+        'message',
+        'creation_time'
+    )
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "users":
+            kwargs["queryset"] = User.objects.filter(notification_setting__isnull=False,
+                                                     notification_setting__enabled=True,
+                                                     notification_setting__admin_notifications=True)
+        return super(NotificationAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if form.cleaned_data['users']:
+            users = list(form.cleaned_data['users'].values_list('id', flat=True))
+            FCM.notify_custom_notification(users, obj)
 
 
 admin.site.register(User, CustomUserAdmin)

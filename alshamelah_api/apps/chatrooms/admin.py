@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import RoomType, Seminar, Discussion, DiscussionRegistration, SeminarRegistration
+from .models import Seminar, Discussion, DiscussionRegistration, SeminarRegistration
 
 
 @admin.register(Seminar, Discussion)
@@ -8,7 +8,6 @@ class ChatRoomAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'title',
-        'category',
         'lecturer',
         'date',
         'from_time',
@@ -39,9 +38,8 @@ class RegistrationAdmin(admin.ModelAdmin):
     def room_from_time(self, obj):
         return obj.chat_room.from_time
 
-
-@admin.register(RoomType)
-class ChatRoomTypeAdmin(admin.ModelAdmin):
-    list_display = (
-        'name',
-    )
+# @admin.register(RoomType)
+# class ChatRoomTypeAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'name',
+#     )

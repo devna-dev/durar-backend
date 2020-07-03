@@ -69,6 +69,7 @@ INSTALLED_APPS = BASE_INSTALLED_APPS + [
     'apps.sms',
     'apps.site_data',
     'apps.payments',
+    # 'apps.event_history',
 
     # file cleanup on model delete
     'django_cleanup.apps.CleanupConfig',
@@ -281,3 +282,6 @@ class TWILIO(object):
     ACCOUNT_SID = 'AC1e118a01b05f894be3c76cab4334be3b'
     AUTH_TOKEN = '758c7916964f29f8764abcca829e69ef'
     NUMBER = '+15704131570'
+
+
+FCM_API_KEY = 'AAAAX_Hhrso:APA91bHamsST7lCNdg-IQNQUiVPf9Le8oA0-9cuAYdDtg_LPXZjWlOnolVwVOfxWz8SSZUBzIlH31JnQ70Z1YrNlEBhaSXDHNR3sBIXN_gXFx6a6RVO4ePfjQNE18rscB-OAxLlgC7K_'
