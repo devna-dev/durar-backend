@@ -32,8 +32,9 @@ from .util import ArabicUtilities
 from ..chatrooms.models import Seminar, Discussion, ChatRoom
 from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer, ChatRoomListSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
+from ..points.services import PointsService
 from ..users.roles import AppPermissions
-from ..users.services import FCM
+from ..users.services import FCMService
 
 
 class BookViewSet(viewsets.ModelViewSet):
@@ -204,8 +205,8 @@ class BookViewSet(viewsets.ModelViewSet):
         if has_permission(request.user, AppPermissions.edit_user_data):
             ReadBook.objects.update_or_create(book_id=pk, user_id=request.user.id, page=page)
         if request.user.id and request.user.notification_setting.device_id:
-            FCM.send('Book reading started', 'You started reading: ' + book.title + ' ',
-                     request.user.notification_setting.device_id)
+            FCMService.send('Book reading started', 'You started reading: ' + book.title + ' ',
+                            request.user.notification_setting.device_id)
         return Response(data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(manual_parameters=BookPageSearchParameters)
@@ -227,8 +228,10 @@ class BookViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
     def submit(self, request, pk=None):
         self.partial_update(request, {'pk': pk, })
-        if request.user.id:
-            FCM.notify_book_approved(request.user)
+        book = Book.objects.filter(pk=pk).first()
+        if book:
+            FCMService.notify_book_approved(book.uploader)
+            PointsService().book_approval_award(book.uploader, book.pk)
         return Response(status=status.HTTP_202_ACCEPTED)
 
     @action(detail=True, methods=['get'], permission_classes=[])
@@ -280,6 +283,10 @@ class PaperViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
     def submit(self, request, pk=None):
         self.partial_update(request, {'pk': pk, })
+        book = Paper.objects.filter(pk=pk).first()
+        if book:
+            FCMService.notify_paper_approved(book.uploader)
+            PointsService().paper_approval_award(book.uploader, book.pk)
         return Response(status=status.HTTP_202_ACCEPTED)
 
 
@@ -305,6 +312,10 @@ class ThesisViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
     def submit(self, request, pk=None):
         self.partial_update(request, {'pk': pk, })
+        book = Thesis.objects.filter(pk=pk).first()
+        if book:
+            FCMService.notify_thesis_approved(book.uploader)
+            PointsService().thesis_approved_award(book.uploader, book.pk)
         return Response(status=status.HTTP_202_ACCEPTED)
 
 

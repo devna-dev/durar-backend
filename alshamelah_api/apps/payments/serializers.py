@@ -5,7 +5,8 @@ from rest_framework import serializers
 
 from .models import Payment, CreditCardInfo
 from .services.my_fatoorah import initiate_payment
-from ..users.services import FCM
+from ..points.services import PointsService
+from ..users.services import FCMService
 
 
 class PaymentSerializer(serializers.ModelSerializer):
@@ -50,17 +51,20 @@ class PaymentCreditCardSerializer(serializers.ModelSerializer):
             del validated_data[info]
             self.data.pop(info)
         created = super(PaymentCreditCardSerializer, self).create(validated_data)
+        user = self.context.get('request').user
         try:
             payment = initiate_payment(self.context.get('request'), payment_data=created, card=card)
         except Exception as ex:
             created.payment_response = json.dumps(ex)
+            created.status = 'failed'
             created.save()
-            FCM.notify_payment_rejected(self.context.get('request').user)
+            FCMService.notify_payment_rejected(user)
             return created
         if payment.status_code > 210:
             created.payment_response = payment.json()
+            created.status = 'failed'
             created.save()
-            FCM.notify_payment_rejected(self.context.get('request').user)
+            FCMService.notify_payment_rejected(user)
         elif payment.status_code == 200:
             response = payment.json()
             created.status = str(response['Data']['Status']).lower()
@@ -68,5 +72,6 @@ class PaymentCreditCardSerializer(serializers.ModelSerializer):
             created.payment_card_type = response['Data']['CardInfo']['Brand']
             created.payment_response = response
             created.save()
-            FCM.notify_payment_success(self.context.get('request').user)
+            FCMService.notify_payment_success(user)
+            PointsService().donation_award(user, created)
         return created

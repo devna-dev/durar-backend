@@ -5,6 +5,7 @@ from dateutil import relativedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.hashers import make_password
+from django.db.models import Sum
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
 from rolepermissions.checkers import has_permission
@@ -12,8 +13,9 @@ from rolepermissions.roles import assign_role
 
 from .models import Note, NotificationSetting, Notification
 from .roles import AppPermissions
-
 # Get the UserModel
+from ..points.models import PointBadge, UserPoints
+
 UserModel = get_user_model()
 try:
     from allauth.account import app_settings as allauth_settings
@@ -33,7 +35,7 @@ class NotificationSettingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NotificationSetting
-        fields = ['device_id', 'enabled', 'user', 'book_added', 'book_approved', 'audio_approved']
+        exclude = ['creation_time', 'last_update_time']
 
     def create(self, validated_data):
         setting, created = NotificationSetting.objects.update_or_create(
@@ -48,12 +50,14 @@ class UserSerializer(serializers.ModelSerializer):
     notification_settings = NotificationSettingSerializer(source='notification_setting', read_only=True)
     age = serializers.SerializerMethodField()
     photo_url = serializers.SerializerMethodField()
+    points_badge = serializers.SerializerMethodField()
 
     class Meta:
         model = UserModel
         read_only_fields = ['email_verified', 'phone_verified', 'photo_url']
         fields = ['id', 'email', 'name', 'birthday', 'phone', 'gender', 'country', 'address', 'photo',
-                  'email_verified', 'phone_verified', 'permissions', 'notification_settings', 'age', 'photo_url']
+                  'email_verified', 'phone_verified', 'permissions', 'notification_settings', 'age', 'photo_url',
+                  'points_badge']
         extra_kwargs = {
             'photo': {'required': False, 'allow_null': True, 'write_only': True},
             'notification_settings': {'required': False, 'allow_null': True, 'read_only': True},
@@ -96,6 +100,13 @@ class UserSerializer(serializers.ModelSerializer):
         if self.context.get('request') is None: return None
         url = self.context.get('request').build_absolute_uri(user.photo_url) if user.photo_url else None
         return url if url else None
+
+    def get_points_badge(self, user: UserModel):
+        points = UserPoints.objects.filter(user_id=user.id).aggregate(total=Sum('point_num'))
+        if not points:
+            return None
+        badge = PointBadge.objects.filter(point_num__lte=points['total']).order_by('-point_num').first()
+        return badge.name if badge else None
 
 
 class LoginSerializer(serializers.Serializer):

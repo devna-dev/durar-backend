@@ -5,7 +5,7 @@ from pyfcm import FCMNotification
 from .models import Notification, NotificationSetting
 
 
-class FCM(object):
+class FCMService(object):
 
     @staticmethod
     def send(title: str, message: str, device_id=None, device_ids=None):
@@ -30,75 +30,79 @@ class FCM(object):
 
     @staticmethod
     def notify_book_approved(user):
-        device_id = FCM._get_device_id(user)
+        device_id = FCMService._get_device_id(user)
         if not device_id or not user.notification_setting.book_approved:
             return None
-        return FCM.notify(_('Book Approved'), _('Congratulations, your book has been approved'), 'book_approved', user)
+        return FCMService.notify(_('Book Approved'), _('Congratulations, your book has been approved'), 'book_approved',
+                                 user)
 
     @staticmethod
     def notify_paper_approved(user):
-        device_id = FCM._get_device_id(user)
+        device_id = FCMService._get_device_id(user)
         if not device_id or not user.notification_setting.paper_approved:
             return None
-        return FCM.notify(_('Paper Approved'), _('Congratulations, your paper has been approved'), 'paper_approved',
-                          user)
+        return FCMService.notify(_('Paper Approved'), _('Congratulations, your paper has been approved'),
+                                 'paper_approved',
+                                 user)
 
     @staticmethod
     def notify_thesis_approved(user):
-        device_id = FCM._get_device_id(user)
+        device_id = FCMService._get_device_id(user)
         if not device_id or not user.notification_setting.thesis_approved:
             return None
-        return FCM.notify(_('Thesis Approved'), _('Congratulations, your thesis has been approved'), 'thesis_approved',
-                          user)
+        return FCMService.notify(_('Thesis Approved'), _('Congratulations, your thesis has been approved'),
+                                 'thesis_approved',
+                                 user)
 
     @staticmethod
     def notify_audio_approved(user):
-        device_id = FCM._get_device_id(user)
+        device_id = FCMService._get_device_id(user)
         if not device_id or not user.notification_setting.audio_approved:
             return None
-        return FCM.notify(_('Audio Approved'), _('Congratulations, your audio file has been approved'),
-                          'audio_approved', user)
+        return FCMService.notify(_('Audio Approved'), _('Congratulations, your audio file has been approved'),
+                                 'audio_approved', user)
 
     @staticmethod
     def notify_payment_success(user):
-        device_id = FCM._get_device_id(user)
+        device_id = FCMService._get_device_id(user)
         if not device_id or not user.notification_setting.payment_processed:
             return None
-        return FCM.notify(_('Payment success'), _('Congratulations, your payment has been accepted'), 'payment_success',
-                          user)
+        return FCMService.notify(_('Payment success'), _('Congratulations, your payment has been accepted'),
+                                 'payment_success',
+                                 user)
 
     @staticmethod
     def notify_payment_rejected(user):
-        device_id = FCM._get_device_id(user)
+        device_id = FCMService._get_device_id(user)
         if not device_id or not user.notification_setting.payment_processed:
             return None
-        return FCM.notify(_('Payment rejected'),
-                          _(
-                              'Unfortunately your payment has been rejected, please contact the administrator for more details'),
-                          'payment_rejected',
-                          user)
+        return FCMService.notify(_('Payment rejected'),
+                                 _(
+                                     'Unfortunately your payment has been rejected, please contact the administrator for more details'),
+                                 'payment_rejected',
+                                 user)
 
     @staticmethod
     def notify_support_request(user):
-        device_id = FCM._get_device_id(user)
+        device_id = FCMService._get_device_id(user)
         if not device_id or not user.notification_setting.support_requested:
             return None
-        return FCM.notify(_('Support Request'),
-                          _('Your support request has been recorded, we will reply as soon as possible'),
-                          'support_request', user)
+        return FCMService.notify(_('Support Request'),
+                                 _('Your support request has been recorded, we will reply as soon as possible'),
+                                 'support_request', user)
 
     @staticmethod
     def notify_points_awarded(user, points):
-        device_id = FCM._get_device_id(user)
+        device_id = FCMService._get_device_id(user)
         if not device_id or not user.notification_setting.points_awarded:
             return None
-        return FCM.notify(_('Points awarded'), _('Congratulations, you earned {points}'.format(points=points)),
-                          'admin_notification',
-                          user)
+        return FCMService.notify(_('Points awarded'), _('Congratulations, you earned {points}'.format(points=points)),
+                                 'points_awarded',
+                                 user)
 
     @staticmethod
     def notify_custom_notification(user_ids, notification: Notification):
-        return FCM.notify(notification.title, notification.message, 'admin_notification', user_ids=user_ids)
+        return FCMService.notify(notification.title, notification.message, 'admin_notification', user_ids=user_ids)
 
     @staticmethod
     def notify(title: str, message: str, notification_type: str, user=None, user_ids=None, send=True):
@@ -107,7 +111,7 @@ class FCM(object):
         if not title or not message:
             return None
         if user:
-            device_id = FCM._get_device_id(user)
+            device_id = FCMService._get_device_id(user)
             Notification.objects.create(title=title, message=message, user_id=user.id, type=notification_type)
         elif user_ids:
             device_ids = NotificationSetting.objects.filter(user_id__in=user_ids, enabled=True,
@@ -124,7 +128,7 @@ class FCM(object):
             return None
         if send:
             try:
-                return FCM.send(title, message, device_id=device_id, device_ids=device_ids)
+                return FCMService.send(title, message, device_id=device_id, device_ids=device_ids)
             except:
                 pass
         return None

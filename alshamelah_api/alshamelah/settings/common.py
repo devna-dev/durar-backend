@@ -69,6 +69,7 @@ INSTALLED_APPS = BASE_INSTALLED_APPS + [
     'apps.sms',
     'apps.site_data',
     'apps.payments',
+    'apps.points',
     # 'apps.event_history',
 
     # file cleanup on model delete

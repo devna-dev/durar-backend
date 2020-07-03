@@ -10,7 +10,7 @@ from rolepermissions.admin import RolePermissionsUserAdminMixin
 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import CustomNotification
-from .services import FCM
+from .services import FCMService
 
 User = get_user_model()
 
@@ -67,7 +67,7 @@ class NotificationAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         if form.cleaned_data['users']:
             users = list(form.cleaned_data['users'].values_list('id', flat=True))
-            FCM.notify_custom_notification(users, obj)
+            FCMService.notify_custom_notification(users, obj)
 
 
 admin.site.register(User, CustomUserAdmin)

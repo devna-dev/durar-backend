@@ -8,7 +8,8 @@ from rest_framework.response import Response
 from .models import Payment
 from .permissions import CanManagePayments
 from .serializers import PaymentSerializer, PaymentCreditCardSerializer
-from ..users.services import FCM
+from ..points.services import PointsService
+from ..users.services import FCMService
 
 
 class PaymentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -28,7 +29,10 @@ class PaymentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.G
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(context={'request': request}, data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            data = serializer.save()
+            if not data or str(data.status).lower() == 'failed':
+                return Response(data.payment_response['Message'], status=status.HTTP_400_BAD_REQUEST)
+
         return Response(True, status=status.HTTP_201_CREATED)
 
     @action(detail=True, name='payment-success', permission_classes=[AllowAny])
@@ -36,7 +40,8 @@ class PaymentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.G
         payment = Payment.objects.filter(pk=pk)
         if payment:
             payment.update(status='success')
-            FCM.notify_payment_success(payment.user)
+            FCMService.notify_payment_success(payment.user)
+            PointsService().donation_award(payment.user, payment)
         return Response(1)
 
     @action(detail=True, name='payment-error', permission_classes=[AllowAny])
@@ -44,5 +49,5 @@ class PaymentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.G
         payment = Payment.objects.filter(pk=pk)
         if payment:
             payment.update(status='fail', payment_response=json.dumps(request.data))
-            FCM.notify_payment_rejected(payment.user)
+            FCMService.notify_payment_rejected(payment.user)
         return Response(1)

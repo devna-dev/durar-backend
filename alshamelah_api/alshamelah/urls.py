@@ -26,6 +26,7 @@ api_v1_urls = [
     path('', include('apps.sms.urls')),
     path('', include('apps.site_data.urls')),
     path('', include('apps.payments.urls')),
+    path('', include('apps.points.urls')),
 ]
 
 urlpatterns += [

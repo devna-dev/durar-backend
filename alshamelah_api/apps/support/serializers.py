@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .models import Support
-from ..users.services import FCM
+from ..users.services import FCMService
 
 
 class SupportSerializer(serializers.ModelSerializer):
@@ -13,5 +13,5 @@ class SupportSerializer(serializers.ModelSerializer):
         support = super(SupportSerializer, self).create(validated_data)
         request = self.context.get('request')
         if support and request and request.user.id:
-            FCM.notify_support_request(request.user)
+            FCMService.notify_support_request(request.user)
         return support

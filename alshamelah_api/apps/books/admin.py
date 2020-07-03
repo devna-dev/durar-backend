@@ -1,7 +1,8 @@
 from django.contrib import admin
 
 from .models import Book, Thesis, Paper, BookAudio
-from ..users.services import FCM
+from ..points.services import PointsService
+from ..users.services import FCMService
 
 
 @admin.register(Book)
@@ -18,7 +19,8 @@ class BookAdmin(admin.ModelAdmin):
         if change:
             old = Book.objects.filter(pk=obj.pk).first()
             if not old.approved and obj.approved and old.uploader:
-                FCM.notify_book_approved(old.uploader)
+                FCMService.notify_book_approved(old.uploader)
+                PointsService().book_approval_award(old.uploader, old.pk)
         super().save_model(request, obj, form, change)
 
 
@@ -37,11 +39,13 @@ class PaperAdmin(admin.ModelAdmin):
             if obj.type == 'paper':
                 old = Paper.objects.filter(pk=obj.pk).first()
                 if not old.approved and obj.approved and old.uploader:
-                    FCM.notify_paper_approved(old.uploader)
+                    FCMService.notify_paper_approved(old.uploader)
+                    PointsService().paper_approval_award(old.uploader, old.pk)
             elif obj.type == 'thesis':
                 old = Thesis.objects.filter(pk=obj.pk).first()
                 if not old.approved and obj.approved and old.uploader:
-                    FCM.notify_thesis_approved(old.uploader)
+                    FCMService.notify_thesis_approved(old.uploader)
+                    PointsService().thesis_approved_award(old.uploader, old.pk)
 
         super().save_model(request, obj, form, change)
 
@@ -64,6 +68,7 @@ class BookAudioAdmin(admin.ModelAdmin):
             if obj.type == 'audio':
                 old = BookAudio.objects.filter(pk=obj.pk).first()
                 if not old.approved and obj.approved and old.user:
-                    FCM.notify_audio_approved(old.user)
+                    FCMService.notify_audio_approved(old.user)
+                    PointsService().book_approval_award(old.user, old.pk)
 
         super().save_model(request, obj, form, change)
