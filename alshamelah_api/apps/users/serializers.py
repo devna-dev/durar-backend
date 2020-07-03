@@ -103,7 +103,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_points_badge(self, user: UserModel):
         points = UserPoints.objects.filter(user_id=user.id).aggregate(total=Sum('point_num'))
-        if not points:
+        if not points or not points['total']:
             return None
         badge = PointBadge.objects.filter(point_num__lte=points['total']).order_by('-point_num').first()
         return badge.name if badge else None
