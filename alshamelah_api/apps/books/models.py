@@ -181,8 +181,8 @@ class BookMedia(BaseModel):
     def get_path(self, file):
         return os.path.join(self.book.path, self.type, file)
 
-    user = models.ForeignKey('users.User', related_name='book_media', verbose_name=_(u'User'), null=False,
-                             on_delete=models.CASCADE)
+    user = models.ForeignKey('users.User', related_name='book_media', verbose_name=_(u'User'), null=True,
+                             on_delete=models.SET_NULL)
     book = models.ForeignKey(Book, related_name='book_media', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=MEDIA_CHOICES, verbose_name=_(u'Type'))

@@ -193,7 +193,7 @@ class BookViewSet(viewsets.ModelViewSet):
         tashkeel = request.query_params.get('tashkeel', None) != 'false'
         page = request.query_params.get('page', "1")
         if page: page = int(page)
-        if not page or not book.pages or page > len(book.pages):
+        if not page or not book.pages or not type(book.pages) != 'str' or page > len(book.pages):
             return Response(_('Page not found'), status=status.HTTP_400_BAD_REQUEST)
         data = book.pages[page]['text']
         if request.user.id is None or not book.book_notes.exists():
