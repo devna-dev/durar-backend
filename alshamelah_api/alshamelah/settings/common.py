@@ -83,6 +83,7 @@ SITE_DOMAIN = 'Al-Shamelah.com'
 
 REST_USE_JWT = True
 REST_SESSION_LOGIN = False
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
