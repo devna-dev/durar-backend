@@ -46,6 +46,7 @@ class BookListSerializer(serializers.ModelSerializer):
     pdf = serializers.SerializerMethodField('get_pdf')
     download_url = serializers.SerializerMethodField('get_download_url')
     cover_image = serializers.SerializerMethodField('get_cover_image')
+    is_favorite = serializers.SerializerMethodField()
     # searches = serializers.SerializerMethodField('get_searches')
     has_audio = serializers.SerializerMethodField('does_have_audio')
     category = CategorySerializer()
@@ -55,7 +56,7 @@ class BookListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = ['id', 'title', 'author', 'category', 'sub_category', 'rating', 'page_count', 'downloads', 'listens',
-                  'readers', 'reviews', 'has_audio', 'pdf', 'download_url', 'cover_image', 'description']
+                  'readers', 'reviews', 'has_audio', 'pdf', 'download_url', 'cover_image', 'description', 'is_favorite']
 
     @property
     def request(self):
@@ -98,6 +99,11 @@ class BookListSerializer(serializers.ModelSerializer):
         if self.request is None: return None
         url = self.request.build_absolute_uri(book.image) if book.image else None
         return url if url else None
+
+    def get_is_favorite(self, book):
+        if not self.request or not self.request.user.id or not hasattr(self.request.user, 'favorite_books'):
+            return False
+        return self.request.user.favorite_books.filter(book_id=book.id).exists()
 
 
 class UserBookListSerializer(BookListSerializer):
