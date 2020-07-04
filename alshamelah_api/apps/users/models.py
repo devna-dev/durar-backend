@@ -51,7 +51,7 @@ class User(AbstractUser):
         upload_to=get_path,
         blank=False,
         null=True,
-        resize_source=dict(size=(100, 100),
+        resize_source=dict(size=(120, 120),
                            verbose_name=_(u'Photo'))
     )
 

@@ -7,7 +7,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
-from easy_thumbnails.fields import ThumbnailerImageField
 from model_utils import Choices
 
 from .managers import BookAudioManager, BookPDFManager, PaperManager, ThesisManager, BookManager
@@ -44,11 +43,10 @@ class Book(BaseModel):
     # has_audio = models.BooleanField(verbose_name=_(u'Has Audio'), default=False, null=True)
     approved = models.BooleanField(verbose_name=_(u'Approved'), default=False, null=True)
     publish_date = models.DateField(null=True, blank=True, verbose_name=_(u'Publish Date'))
-    cover_image = ThumbnailerImageField(
+    cover_image = models.ImageField(
         upload_to=get_path,
         blank=False,
-        null=True,
-        resize_source=dict(size=(100, 100))
+        null=True
     )
     # read_count = models.PositiveIntegerField(blank=True, null=True, verbose_name=_(u'Read Count'))
     # download_count = models.PositiveIntegerField(blank=True, null=True, verbose_name=_(u'Download Count'))
