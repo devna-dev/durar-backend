@@ -24,7 +24,7 @@ sys.path.append(os.path.join(SITE_ROOT, 'apps'))
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
-DEBUG = int(os.environ.get("DEBUG", default=0))
+DEBUG = 0
 
 # 'DJANGO_ALLOWED_HOSTS' should be a single string of hosts with a space between each.
 # For example: 'DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]'
@@ -154,7 +154,7 @@ REST_AUTH_REGISTER_SERIALIZERS = {
 }
 JWT_AUTH = {
     'JWT_AUTH_HEADER_PREFIX': 'Bearer',
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(hours=12)
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1095)
 }
 ACCOUNT_LOGOUT_ON_GET = False
 SWAGGER_SETTINGS = {

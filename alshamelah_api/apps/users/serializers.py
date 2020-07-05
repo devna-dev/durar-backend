@@ -109,6 +109,20 @@ class UserSerializer(serializers.ModelSerializer):
         return badge.name if badge else None
 
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    photo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserModel
+        read_only_fields = ['photo_url']
+        fields = ['id', 'name', 'photo_url']
+
+    def get_photo_url(self, user):
+        if self.context.get('request') is None: return None
+        url = self.context.get('request').build_absolute_uri(user.photo_url) if user.photo_url else None
+        return url if url else None
+
+
 class LoginSerializer(serializers.Serializer):
     # username = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False, allow_blank=True)

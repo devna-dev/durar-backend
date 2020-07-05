@@ -6,8 +6,13 @@ from django.urls import path, include
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework.permissions import AllowAny
+from rest_framework_extensions.routers import (
+    ExtendedDefaultRouter as DefaultRouter
+)
 
 from .swagger_api_generator import SwaggerAPISchemaGenerator
+
+router = DefaultRouter()
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -64,3 +69,6 @@ if bool(settings.DEBUG):
     urlpatterns = [
                       path('__debug__/', include(debug_toolbar.urls)),
                   ] + urlpatterns
+
+handler404 = 'alshamelah.handler_views.handler404'
+handler500 = 'alshamelah.handler_views.handler500'

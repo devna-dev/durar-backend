@@ -12,7 +12,8 @@ from .models import Book, BookMark, BookAudio, BookPDF, BookNote, BookReview, \
     Thesis
 from .util import ArabicUtilities
 from ..authors.serializers import AuthorSerializer
-from ..categories.serializers import CategorySerializer, SubCategorySerializer
+from ..categories.serializers import CategorySerializer, SubCategorySerializer, CategoryForBookSerializer
+from ..users.serializers import UserProfileSerializer
 
 
 class CurrentBookDefault(object):
@@ -49,7 +50,7 @@ class BookListSerializer(serializers.ModelSerializer):
     is_favorite = serializers.SerializerMethodField()
     # searches = serializers.SerializerMethodField('get_searches')
     has_audio = serializers.SerializerMethodField('does_have_audio')
-    category = CategorySerializer()
+    category = CategoryForBookSerializer()
     sub_category = SubCategorySerializer()
     author = AuthorSerializer()
 
@@ -147,7 +148,7 @@ class UploadBookSerializer(serializers.ModelSerializer):
         model = Book
         fields = '__all__'
         read_only_fields = ['content', 'data', 'uploader', 'has_audio', 'approved', 'read_count',
-                            'download_count', 'page_count', 'search_count']
+                            'download_count', 'page_count', 'search_count', 'type']
         extra_kwargs = {'title': {'required': True},
                         'content': {'required': False, 'allow_null': True},
                         'data': {'required': False, 'allow_null': True},
@@ -478,10 +479,42 @@ class BookReviewSerializer(NestedBookSerializer):
 
 class UserReviewSerializer(serializers.ModelSerializer):
     book = BookListSerializer()
+    likes = serializers.SerializerMethodField()
+    like_id = serializers.SerializerMethodField()
 
     class Meta:
         model = BookReview
         exclude = ['user']
+
+    def get_likes(self, review):
+        return review.likes.count()
+
+    def get_like_id(self, review):
+        if not self.context.get('request') or not self.context.get('request').user.id:
+            return None
+        like = review.likes.filter(user_id=self.context.get('request').user.id).first()
+        return like.id if like else None
+
+
+class UserReviewListSerializer(serializers.ModelSerializer):
+    book = BookListSerializer()
+    user = UserProfileSerializer()
+    likes = serializers.SerializerMethodField()
+    like_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BookReview
+        fields = ['book', 'user', 'likes', 'id', 'like_id']
+
+    def get_likes(self, review):
+        return review.likes.count()
+
+    def get_like_id(self, review):
+        if not self.context.get('request') or not self.context.get('request').user.id:
+            return None
+        like = review.likes.filter(user_id=self.context.get('request').user.id).first()
+        return like.id if like else None
+
 
 class BookAudioSerializer(NestedBookSerializer):
     class Meta(NestedBookSerializer.Meta):
@@ -495,7 +528,6 @@ class BookPDFSerializer(NestedBookSerializer):
 
 class BookReviewLikeSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    review = serializers.HiddenField(default=CurrentReviewDefault())
 
     class Meta:
         model = BookReviewLike
@@ -599,6 +631,13 @@ class BookSearchListSerializer(serializers.ModelSerializer):
         model = SearchBook
         fields = '__all__'
 
+
+class UserBookNoteListSerializer(serializers.ModelSerializer):
+    book = BookListSerializer()
+
+    class Meta:
+        model = BookNote
+        exclude = ['user', 'tashkeel_start', 'tashkeel_end']
 
 class BookSearchSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())

@@ -27,7 +27,8 @@ from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, 
     BookReviewSerializer, BookReviewLikeSerializer, FavoriteBookSerializer, \
     BookSuggestionSerializer, DownloadBookSerializer, BookSearchSerializer, BookSearchListSerializer, \
     ListenProgressSerializer, UserBookListSerializer, UploadPaperSerializer, PaperListSerializer, SubmitPaperSerializer, \
-    UploadThesisSerializer, SubmitThesisSerializer, ThesisListSerializer, UserReviewSerializer
+    UploadThesisSerializer, SubmitThesisSerializer, ThesisListSerializer, UserReviewSerializer, \
+    UserReviewListSerializer, UserBookNoteListSerializer
 from .util import ArabicUtilities
 from ..chatrooms.models import Seminar, Discussion, ChatRoom
 from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer, ChatRoomListSerializer
@@ -374,6 +375,11 @@ class BookReviewViewSet(NestedBookViewSet):
     permission_classes = (CanManageBookReview,)
     book_query = 'book'
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UserReviewListSerializer
+        return UserReviewSerializer
+
 
 class CategoryBooksView(views.APIView):
     def get_object(self, queryset=None):
@@ -391,36 +397,18 @@ class CategoryBooksView(views.APIView):
 category_books_view = CategoryBooksView.as_view()
 
 
-class BookReviewLikesViewSet(viewsets.ModelViewSet):
-    def dispatch(self, request, *args, **kwargs):
-        review_id = kwargs.get('review_id', None)
-        book_id = kwargs.get('book_id', None)
-        self.book = get_object_or_404(Book, pk=book_id)
-        self.review = get_object_or_404(BookReview, pk=review_id)
-        self.user = self.request.user
-        return super(BookReviewLikesViewSet, self).dispatch(request, *args, **kwargs)
-
-    def get_serializer_context(self):
-        """
-        Extra context provided to the serializer class.
-        """
-        context = super(BookReviewLikesViewSet, self).get_serializer_context()
-        if hasattr(self, 'review') and hasattr(self, 'user') and hasattr(self, 'book'):
-            context.update(
-                book=self.book,
-                review=self.review,
-                user=self.user
-            )
-        return context
+class BookReviewLikesViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
 
     def get_queryset(self):
-        return BookReviewLike.objects.filter(review_id=self.review.id, user_id=self.request.user.id)
+        return BookReviewLike.objects.filter(user_id=self.request.user.id)
 
-    def list(self, request, *args, **kwargs):
-        return Response(BookReviewLike.objects.count(review_id=self.review.id), status=status.HTTP_200_OK)
+    # def list(self, request, *args, **kwargs):
+    #     return Response(BookReviewLike.objects.count(review_id=self.review.id), status=status.HTTP_200_OK)
 
     serializer_class = BookReviewLikeSerializer
     permission_classes = (CanManageBookReview,)
+
+
 
 
 class FavoriteViewSet(viewsets.ModelViewSet):
@@ -698,6 +686,23 @@ class SearchesViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.
         return BookSearchSerializer
 
 
+class UserBookNotesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    permission_classes = (CanManageUserData,)
+
+    @property
+    def pagination_class(self):
+        if 'offset' in self.request.query_params:
+            return CustomLimitOffsetPagination
+        else:
+            return CustomPageNumberPagination
+
+    def get_queryset(self):
+        return BookNote.objects.filter(user_id=self.request.user.id)
+
+    def get_serializer_class(self):
+        return UserBookNoteListSerializer
+
+
 class UserReviewsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = (CanManageUserData,)
 
@@ -713,6 +718,7 @@ class UserReviewsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     def get_serializer_class(self):
         return UserReviewSerializer
+
 
 class ActivitiesBooksView(views.APIView):
     permission_classes = (AllowAny,)
