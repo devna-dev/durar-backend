@@ -204,9 +204,6 @@ class BookViewSet(viewsets.ModelViewSet):
                                                         data, page, tashkeel)
         if has_permission(request.user, AppPermissions.edit_user_data):
             ReadBook.objects.update_or_create(book_id=pk, user_id=request.user.id, page=page)
-        if request.user.id and request.user.notification_setting.device_id:
-            FCMService.send('Book reading started', 'You started reading: ' + book.title + ' ',
-                            request.user.notification_setting.device_id)
         return Response(data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(manual_parameters=BookPageSearchParameters)
