@@ -101,6 +101,8 @@ class ChatRoomRegistrationSerializer(serializers.ModelSerializer):
     def validate_chat_room(self, room):
         if room.type != self.type:
             raise serializers.ValidationError(_('Invalid room id'))
+        if room.date < datetime.now().date() or (room.date == datetime.now().date() and room.from_time < datetime.now().time()):
+            raise serializers.ValidationError(_('Registration time has already passed'))
         return room
 
     def create(self, validated_data):

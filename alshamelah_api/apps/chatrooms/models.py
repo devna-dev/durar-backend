@@ -82,6 +82,12 @@ class Seminar(ChatRoom):
         self.type = 'seminar'
 
 
+class ArchivedSeminar(Seminar):
+    class Meta:
+        verbose_name_plural = "Archived Seminars"
+        proxy = True
+
+
 class Discussion(ChatRoom):
     objects = DiscussionManager()
 
@@ -95,6 +101,12 @@ class Discussion(ChatRoom):
 
     def __str__(self):
         return self.title
+
+
+class ArchivedDiscussion(Discussion):
+    class Meta:
+        verbose_name_plural = "Archived Discussions"
+        proxy = True
 
 
 class ChatRoomRegistration(BaseModel):
@@ -120,4 +132,18 @@ class SeminarRegistration(ChatRoomRegistration):
 
     class Meta:
         verbose_name_plural = "Seminar Registrations"
+        proxy = True
+
+
+class ArchivedDiscussionRegistration(DiscussionRegistration):
+
+    class Meta:
+        verbose_name_plural = "Archived Discussion Registrations"
+        proxy = True
+
+
+class ArchivedSeminarRegistration(SeminarRegistration):
+
+    class Meta:
+        verbose_name_plural = "Archived Seminar Registrations"
         proxy = True

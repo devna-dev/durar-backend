@@ -221,7 +221,7 @@ class FavoriteBook(BaseModel):
                              on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.user.name + ":" + self.book.title
+        return (self.user.name if self.user and self.user.name else '') + ":" + (self.book.title if self.book and self.book.title else '')
 
 
 class ReadBook(BaseModel):
@@ -232,7 +232,7 @@ class ReadBook(BaseModel):
     page = models.PositiveSmallIntegerField(verbose_name=_('Page reached'), null=True, blank=False)
 
     def __str__(self):
-        return self.user.name + ":" + self.book.title
+        return (self.user.name if self.user and self.user.name else '') + ":" + (self.book.title if self.book and self.book.title else '')
 
 
 class DownloadBook(BaseModel):
@@ -242,7 +242,7 @@ class DownloadBook(BaseModel):
                              on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.user.name + ":" + self.book.title
+        return (self.user.name if self.user and self.user.name else '') + ":" + (self.book.title if self.book and self.book.title else '')
 
 
 class ListenBook(BaseModel):
@@ -252,7 +252,7 @@ class ListenBook(BaseModel):
                              on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.user.name + ":" + self.book.title
+        return (self.user.name if self.user and self.user.name else '') + ":" + (self.book.title if self.book and self.book.title else '')
 
 
 class ListenProgress(BaseModel):

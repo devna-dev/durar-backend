@@ -1,0 +1,26 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+{% block submit_buttons_bottom %}
+    {{ block.super }}
+    <script
+            src="https://code.jquery.com/jquery-3.5.1.slim.js"
+            integrity="sha256-DrT5NfxfbHvMHux31Lkhxg42LY6of8TaYyK50jnxRnM="
+            crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function () {
+            {% autoescape off %}
+                const subCategories = [{{ all_sub_categories }}];
+            {% endautoescape %}
+            let $subCategories = $("#id_sub_category");
+            let $categories = $("#id_category");
+            $categories.on("change", function () {
+                $subCategories.val('').children().not(':first').remove();
+                const val = $(this).val();
+                const types = subCategories.filter(item => item.category_id === null || item.category_id.toString() === val);
+                for (let i = 0; i < types.length; i++) {
+                    $subCategories.append('<option value="' + types[i].id + '" ' + (val == types[i].category_id.toString() ? 'selected' : '') + '>' + types[i].name + '</option>');
+                }
+            }).trigger('change');
+        });
+    </script>
+{% endblock %}

@@ -6,6 +6,7 @@ from .models import Category, SubCategory
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = (
+        'id',
         'name',
     )
 
@@ -13,6 +14,7 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(SubCategory)
 class SubCategoryAdmin(admin.ModelAdmin):
     list_display = (
+        'id',
         'name',
         'category'
     )

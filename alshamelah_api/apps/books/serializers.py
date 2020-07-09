@@ -270,13 +270,12 @@ class UploadThesisSerializer(serializers.ModelSerializer):
 class PaperListSerializer(serializers.ModelSerializer):
     pdf = serializers.SerializerMethodField()
     cover_image = serializers.SerializerMethodField()
-    category = CategorySerializer()
-    sub_category = SubCategorySerializer()
+    category = CategoryForBookSerializer()
     author = AuthorSerializer()
 
     class Meta:
         model = Paper
-        fields = ['id', 'title', 'author', 'category', 'sub_category', 'page_count', 'pdf',
+        fields = ['id', 'title', 'author', 'category', 'page_count', 'pdf',
                   'cover_image', 'description', 'publish_date']
 
     @property
