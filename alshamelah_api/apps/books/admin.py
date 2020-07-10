@@ -88,6 +88,9 @@ class BookAudioAdmin(admin.ModelAdmin):
     def book_name(self, obj):
         return obj.book
 
+    def type(self, obj):
+        return obj.book.type
+
     def save_model(self, request, obj, form, change):
         if change:
             if obj.type == 'audio':
