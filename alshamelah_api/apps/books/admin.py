@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .forms import BookForm, PaperForm
+from .forms import BookForm, PaperForm, BookChoiceField
 from ..categories.models import SubCategory
 from .models import Book, Thesis, Paper, BookAudio, BookPDF
 from ..points.services import PointsService
@@ -31,7 +31,8 @@ class BookAdmin(admin.ModelAdmin):
 
     def get_all_sub_categories(self):
         types = SubCategory.objects.all().order_by('name').only('id', 'name', 'category_id')
-        return ','.join(["{'id': '" + str(t.id) + "', 'name': '" + t.name + "', 'category_id': " + (str(t.category_id) if t.category_id else 'null') + "}" for t in types])
+        return ','.join(["{'id': '" + str(t.id) + "', 'name': '" + t.name + "', 'category_id': " + (
+            str(t.category_id) if t.category_id else 'null') + "}" for t in types])
 
     def add_view(self, request, form_url='', extra_context=None):
         extra_context = extra_context or {}
@@ -77,6 +78,7 @@ class BookAudioAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'book_name',
+        'type',
         'url',
         'approved',
     )
@@ -95,3 +97,8 @@ class BookAudioAdmin(admin.ModelAdmin):
                     PointsService().book_approval_award(old.user, old.pk)
 
         super().save_model(request, obj, form, change)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "book":
+            return BookChoiceField(Book.objects.get_all())
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)

@@ -63,6 +63,11 @@ class RegistrationAdmin(admin.ModelAdmin):
     def room_from_time(self, obj):
         return obj.chat_room.from_time
 
+    def get_queryset(self, request):
+        qs = super(RegistrationAdmin, self).get_queryset(request)
+        return qs.filter(Q(chat_room__date__gt=datetime.datetime.now().date()) | Q(
+            Q(chat_room__date=datetime.datetime.now().date()) & Q(chat_room__from_time__gt=datetime.datetime.now().time())))
+
 
 @admin.register(ArchivedDiscussionRegistration, ArchivedSeminarRegistration)
 class ArchivedRegistrationAdmin(RegistrationAdmin):

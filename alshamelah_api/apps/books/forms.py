@@ -9,6 +9,7 @@ from .models import Book, BookPDF
 class BookForm(forms.ModelForm):
     json_file = forms.FileField(allow_empty_file=False, required=False)
     pdf = forms.FileField(allow_empty_file=False, required=False)
+    content = forms.CharField(required=False,widget=forms.HiddenInput())
 
     class Meta:
         model = Book
@@ -20,10 +21,14 @@ class BookForm(forms.ModelForm):
         instance = getattr(self, 'instance', None)
         if self.files.get('content', None):
             self.fields['content'].required = False
+            self.fields['content'].widget = forms.HiddenInput()
             self.fields['content'].widget.attrs['readonly'] = 'readonly'
         if self.files.get('data', None):
             self.fields['data'].required = False
             self.fields['data'].widget.attrs['readonly'] = 'readonly'
+        if self.files.get('page_count', None):
+            self.fields['page_count'].required = False
+            self.fields['page_count'].widget.attrs['readonly'] = 'readonly'
         self.pdf_file = None
 
     def clean(self):
@@ -64,3 +69,8 @@ class PaperForm(BookForm):
         model = Book
         exclude = ['type', 'content', 'data']
         readonly_fields = ('uploader',)
+
+
+class BookChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return "{}: {}".format(obj.type ,obj.name)

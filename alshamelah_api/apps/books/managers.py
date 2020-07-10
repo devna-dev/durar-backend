@@ -18,6 +18,9 @@ class BookManager(models.Manager):
         return super(BookManager, self).get_queryset().filter(
             type='book')
 
+    def get_all(self):
+        return super(BookManager, self).get_queryset()
+
 
 class PaperManager(models.Manager):
     def get_queryset(self):
