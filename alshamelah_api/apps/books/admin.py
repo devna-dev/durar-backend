@@ -78,7 +78,7 @@ class BookAudioAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'book_name',
-        'type',
+        'book_type',
         'url',
         'approved',
     )
@@ -88,7 +88,7 @@ class BookAudioAdmin(admin.ModelAdmin):
     def book_name(self, obj):
         return obj.book
 
-    def type(self, obj):
+    def book_type(self, obj):
         return obj.book.type
 
     def save_model(self, request, obj, form, change):

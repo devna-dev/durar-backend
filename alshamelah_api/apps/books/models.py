@@ -86,7 +86,8 @@ class Book(BaseModel):
 
     def __init__(self, *args, **kwargs):
         super(Book, self).__init__(*args, **kwargs)
-        self.type = 'book'
+        if self.pk is None:
+            self.type = 'book'
 
 
 class Paper(Book):
