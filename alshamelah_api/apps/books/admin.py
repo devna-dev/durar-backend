@@ -82,7 +82,7 @@ class BookAudioAdmin(admin.ModelAdmin):
         'url',
         'approved',
     )
-    exclude = ['type']
+    exclude = ['type', 'duration']
     readonly_fields = ('user',)
 
     def book_name(self, obj):

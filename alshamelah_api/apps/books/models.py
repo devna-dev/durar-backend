@@ -1,4 +1,5 @@
 import os
+from mutagen.mp3 import MP3
 from datetime import datetime
 
 from django.conf import settings
@@ -184,6 +185,8 @@ class BookMedia(BaseModel):
                              on_delete=models.SET_NULL)
     book = models.ForeignKey(Book, related_name='book_media', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
+    duration = models.DecimalField(null=True, blank=True, verbose_name=_(u'Audio duration'), max_digits=10,
+                                   decimal_places=2)
     type = models.CharField(max_length=10, choices=MEDIA_CHOICES, verbose_name=_(u'Type'))
     url = models.FileField(verbose_name=_(u'Url'), upload_to=get_path)
     approved = models.BooleanField(verbose_name=_(u'Approved'), default=False)
@@ -202,6 +205,16 @@ class BookAudio(BookMedia):
     def __init__(self, *args, **kwargs):
         super(BookMedia, self).__init__(*args, **kwargs)
         self.type = 'audio'
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.url:
+            try:
+                audio = MP3(self.url)
+                self.duration = audio.info.length / 60
+            except:
+                pass
+        return super(BookAudio, self).save(force_insert, force_update, using, update_fields)
 
 
 class BookPDF(BookMedia):
@@ -222,7 +235,8 @@ class FavoriteBook(BaseModel):
                              on_delete=models.CASCADE)
 
     def __str__(self):
-        return (self.user.name if self.user and self.user.name else '') + ":" + (self.book.title if self.book and self.book.title else '')
+        return (self.user.name if self.user and self.user.name else '') + ":" + (
+            self.book.title if self.book and self.book.title else '')
 
 
 class ReadBook(BaseModel):
@@ -231,9 +245,11 @@ class ReadBook(BaseModel):
     book = models.ForeignKey(Book, related_name='readers', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
     page = models.PositiveSmallIntegerField(verbose_name=_('Page reached'), null=True, blank=False)
+    finished = models.BooleanField(null=False, verbose_name=_('Finished'), default=False)
 
     def __str__(self):
-        return (self.user.name if self.user and self.user.name else '') + ":" + (self.book.title if self.book and self.book.title else '')
+        return (self.user.name if self.user and self.user.name else '') + ":" + (
+            self.book.title if self.book and self.book.title else '')
 
 
 class DownloadBook(BaseModel):
@@ -243,7 +259,8 @@ class DownloadBook(BaseModel):
                              on_delete=models.CASCADE)
 
     def __str__(self):
-        return (self.user.name if self.user and self.user.name else '') + ":" + (self.book.title if self.book and self.book.title else '')
+        return (self.user.name if self.user and self.user.name else '') + ":" + (
+            self.book.title if self.book and self.book.title else '')
 
 
 class ListenBook(BaseModel):
@@ -253,7 +270,8 @@ class ListenBook(BaseModel):
                              on_delete=models.CASCADE)
 
     def __str__(self):
-        return (self.user.name if self.user and self.user.name else '') + ":" + (self.book.title if self.book and self.book.title else '')
+        return (self.user.name if self.user and self.user.name else '') + ":" + (
+            self.book.title if self.book and self.book.title else '')
 
 
 class ListenProgress(BaseModel):

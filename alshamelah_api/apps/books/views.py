@@ -204,7 +204,14 @@ class BookViewSet(viewsets.ModelViewSet):
             data = ArabicUtilities.get_highlighted_text(book.book_notes.filter(user_id=request.user.id, page=page),
                                                         data, page, tashkeel)
         if has_permission(request.user, AppPermissions.edit_user_data):
-            ReadBook.objects.update_or_create(book_id=pk, user_id=request.user.id, page=page)
+            reading = ReadBook.objects.filter(book_id=pk, user_id=request.user.id).first()
+            if reading:
+                finished = reading.page == page - 1
+                reading.finished = finished
+                reading.page = page
+            else:
+                ReadBook.objects.create(book_id=pk, user_id=request.user.id, page=page)
+
         return Response(data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(manual_parameters=BookPageSearchParameters)
@@ -407,8 +414,6 @@ class BookReviewLikesViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin, 
 
     serializer_class = BookReviewLikeSerializer
     permission_classes = (CanManageBookReview,)
-
-
 
 
 class FavoriteViewSet(viewsets.ModelViewSet):
