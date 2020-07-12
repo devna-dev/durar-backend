@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import PointSetting, PointBadge
+from .models import PointSetting, PointBadge, Achievement
 
 
 @admin.register(PointSetting)
@@ -25,4 +25,15 @@ class PointBadgesAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'point_num'
+    )
+
+@admin.register(Achievement)
+class AchievementAdmin(admin.ModelAdmin):
+    list_display = (
+        'type',
+        'title',
+        'bronze',
+        'silver',
+        'gold',
+        'diamond'
     )

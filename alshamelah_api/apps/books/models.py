@@ -212,7 +212,7 @@ class BookAudio(BookMedia):
             try:
                 audio = MP3(self.url)
                 self.duration = audio.info.length / 60
-            except:
+            except Exception as ex:
                 pass
         return super(BookAudio, self).save(force_insert, force_update, using, update_fields)
 
