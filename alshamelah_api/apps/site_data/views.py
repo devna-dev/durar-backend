@@ -2,7 +2,7 @@ from rest_framework import views
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .models import Legal
+from .models import Legal, AppUrls
 from .serializers import TermsSerializer, PolicySerializer
 
 
@@ -22,3 +22,11 @@ class PolicyView(views.APIView):
     def get(self, request, *args, **kwargs):
         data = Legal.objects.all().first()
         return Response(data.policy if data else None)
+
+class AppUrlsView(views.APIView):
+    serializer_class = PolicySerializer
+    permission_classes = (AllowAny,)
+
+    def get(self, request, *args, **kwargs):
+        data = AppUrls.objects.all().first()
+        return Response({'google': data.google, 'apple': data.apple} if data else None)
