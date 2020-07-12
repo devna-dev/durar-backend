@@ -506,7 +506,7 @@ class UserReviewListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BookReview
-        fields = ['book', 'user', 'likes', 'id', 'like_id', 'comment']
+        fields = ['book', 'user', 'likes', 'id', 'like_id', 'comment', 'creation_time']
 
     def get_likes(self, review):
         return review.likes.count()
