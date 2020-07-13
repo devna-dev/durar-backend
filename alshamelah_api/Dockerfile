@@ -24,6 +24,8 @@ COPY ./requirements.txt /usr/src/app/requirements.txt
 # copy project
 COPY . /usr/src/app/
 
+RUN chmod 666 /usr/src/app/media
+
 RUN pip install -r requirements.txt
 
 # copy entrypoint.sh
