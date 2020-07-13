@@ -4,7 +4,7 @@ services:
   web:
     build: ./alshamelah_api
     image: oratio/virgo:latest
-      command: gunicorn alshamelah.wsgi:application --bind 0.0.0.0:1333
+    command: gunicorn alshamelah.wsgi:application --bind 0.0.0.0:1333
     volumes:
       - ./alshamelah_api:/usr/src/app
     expose:
