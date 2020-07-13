@@ -4,12 +4,11 @@ services:
   web:
     build: ./alshamelah_api
     image: oratio/virgo:latest
-    command: python manage.py runserver 0.0.0.0:1333
+      command: gunicorn alshamelah.wsgi:application --bind 0.0.0.0:1333
     volumes:
       - ./alshamelah_api:/usr/src/app
-    ports:
-      - "1333:1333"
-#      - "80:8000"
+    expose:
+      - 1333
     env_file:
       - ./.env
     depends_on:
