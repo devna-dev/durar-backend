@@ -16,6 +16,8 @@ RUN apk update \
     && apk add postgresql-dev gcc python3-dev musl-dev jpeg-dev zlib-dev libjpeg \
     && pip install psycopg2
 
+RUN apk add --no-cache bash
+
 # install dependencies
 COPY ./requirements.txt /usr/src/app/requirements.txt
 
