@@ -134,7 +134,6 @@ EMAIL_VERIFICATION = 'optional'
 ACCOUNT_ADAPTER = 'apps.users.adapter.UserAdapter'
 EMAIL_OTP_EXPIRY = 60 * 60
 PHONE_OTP_EXPIRY = 60 * 5
-
 # CUSTOM USER MODEL CONFIGS
 # ------------------------------------------------------------------------------
 AUTH_USER_MODEL = 'users.User'
@@ -266,6 +265,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
+print(MEDIA_ROOT)
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False
 ACCOUNT_USERNAME_REQUIRED = False
