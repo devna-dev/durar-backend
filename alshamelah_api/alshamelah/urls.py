@@ -63,6 +63,9 @@ urlpatterns += [
 
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+print(static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT))
+print(settings.BASE_DIR)
+print(settings.MEDIA_ROOT)
 if bool(settings.DEBUG):
     import debug_toolbar
 
