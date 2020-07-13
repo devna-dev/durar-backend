@@ -4,7 +4,6 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 from django.contrib.postgres.fields import JSONField
-
 from ..core.models import BaseModel
 
 
@@ -121,36 +120,50 @@ class UserAchievement(BaseModel):
         ('diamond', _(u'Diamond')),
     )
 
-    type = models.CharField(max_length=10, choices=TYPE_CHOICES, verbose_name=_(u'Type'))
+    category = models.CharField(max_length=10, choices=TYPE_CHOICES, verbose_name=_(u'Type'))
+    points = models.PositiveSmallIntegerField(default=0, null=False)
+
+    @property
+    def title(self):
+        return self.achievement.title
+
+    @property
+    def icon(self):
+        return getattr(self.achievement,self.category + '_icon').url
+
+    @property
+    def type(self):
+        return self.achievement.type
 
 
 class UserStatistics(BaseModel):
-    user = models.ForeignKey('users.User', related_name='achievements', verbose_name=_(u'User'), null=False,
+    from .managers import UserStatisticsManager
+    objects = UserStatisticsManager()
+    user = models.ForeignKey('users.User', related_name='statistics', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
-    reads = JSONField()
+    reads = JSONField(null=True) #
     book_note_count = models.PositiveSmallIntegerField(default=0)
     user_note_count = models.PositiveSmallIntegerField(default=0)
     book_highlight_count = models.PositiveSmallIntegerField(default=0)
-    book_finished_count = models.PositiveSmallIntegerField(default=0)
+    book_mark_count = models.PositiveSmallIntegerField(default=0)
+    book_finished_count = models.PositiveSmallIntegerField(default=0) #
     book_review_count = models.PositiveSmallIntegerField(default=0)
     book_rate_count = models.PositiveSmallIntegerField(default=0)
     book_share_count = models.PositiveSmallIntegerField(default=0)
     app_share_count = models.PositiveSmallIntegerField(default=0)
     lecture_share_count = models.PositiveSmallIntegerField(default=0)
+    lecture_attendance_count = models.PositiveSmallIntegerField(default=0)
     highlight_share_count = models.PositiveSmallIntegerField(default=0)
     donation_count = models.PositiveSmallIntegerField(default=0)
     minutes_listened = models.PositiveSmallIntegerField(default=0)
     audio_book_finished_count = models.PositiveSmallIntegerField(default=0)
-    book_read_count = models.PositiveSmallIntegerField(default=0)
-    page_read_count = models.PositiveSmallIntegerField(default=0)
+    book_read_count = models.PositiveSmallIntegerField(default=0) #
+    page_read_count = models.PositiveSmallIntegerField(default=0) #
     book_listened_count = models.PositiveSmallIntegerField(default=0)
-    max_book_pages_read = models.PositiveSmallIntegerField(default=0)
+    max_book_pages_read = models.PositiveSmallIntegerField(default=0) #
     max_book_audio_minutes_listened = models.PositiveSmallIntegerField(default=0)
     max_consecutive_login_days = models.PositiveSmallIntegerField(default=0)
-    max_daily_read = models.PositiveSmallIntegerField(default=0)
+    max_daily_read = models.PositiveSmallIntegerField(default=0) #
     max_daily_listen = models.PositiveSmallIntegerField(default=0)
-    daily_read = JSONField()
-    daily_listen = JSONField()
-    last_login = models.DateField(null=True)
-
-
+    daily_read = JSONField(null=True) #
+    daily_listen = JSONField(null=True)

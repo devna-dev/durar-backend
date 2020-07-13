@@ -7,6 +7,7 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse_lazy
 from rest_framework.utils import json
 
+from ..points.models import UserStatistics
 from .models import Book, BookMark, BookAudio, BookPDF, BookNote, BookReview, \
     BookReviewLike, ReadBook, FavoriteBook, DownloadBook, ListenBook, BookSuggestion, SearchBook, ListenProgress, Paper, \
     Thesis
@@ -402,6 +403,7 @@ class BookMarkSerializer(NestedBookSerializer):
             user=validated_data.get('user', None),
             book=validated_data.get('book', None),
             defaults={'page': validated_data.get('page', None)})
+        UserStatistics.objects.update_bookmarks(mark.user)
         return mark
 
 
@@ -437,7 +439,9 @@ class BookNoteSerializer(NestedBookSerializer):
 
         del validated_data['tashkeel_on']
         self.data.pop('tashkeel_on')
-        return super(BookNoteSerializer, self).create(validated_data)
+        note = super(BookNoteSerializer, self).create(validated_data)
+        UserStatistics.objects.update_notes_and_highlights(note.user)
+        return note
 
     def update(self, instance, validated_data):
         if validated_data['tashkeel_on']:
@@ -455,7 +459,9 @@ class BookNoteSerializer(NestedBookSerializer):
 
         del validated_data['tashkeel_on']
         self.data.pop('tashkeel_on')
-        return super(BookNoteSerializer, self).update(instance, validated_data)
+        note = super(BookNoteSerializer, self).update(instance, validated_data)
+        UserStatistics.objects.update_notes_and_highlights(note.user)
+        return note
 
 
 class BookReviewSerializer(NestedBookSerializer):
@@ -469,6 +475,7 @@ class BookReviewSerializer(NestedBookSerializer):
             user=validated_data.get('user', None),
             book=validated_data.get('book', None),
             defaults=validated_data)
+        UserStatistics.objects.update_reviews(review.user)
         # event = BookReviewEventSerializer(change_type=('create' if created else 'update'), review=review,
         #                                   context={'request': self.context.get('request')})
         # if event.is_valid():
@@ -603,13 +610,27 @@ class ListenProgressSerializer(serializers.ModelSerializer):
         user = validated_data.get('user', None)
         book = validated_data.get('book', None)
         audio = validated_data.get('audio', None)
+        progress = validated_data.get('progress', 0)
         if user and book and audio:
             listen, created = ListenBook.objects.get_or_create(user=user, book=book)
             file_progress, created = ListenProgress.objects.update_or_create(
                 listen=listen,
                 audio=audio,
-                defaults={'progress': validated_data.get('progress', None)}
+                defaults={'progress': progress}
             )
+            UserStatistics.objects.listen(user.id, book.id)
+            if progress == 100:
+                audio_files = book.book_media.filter(type='audio', approved=True)
+                listened = ListenProgress.objects.filter(listen__user_id=user.id)
+                finished = True
+                for file in audio_files:
+                    listened_file = listened.filter(audio_id=file.id).first()
+                    if not listened_file or listened_file.progress < 100:
+                        finished = False
+                if finished:
+                    listen.finished = True
+                    listen.save()
+                    UserStatistics.objects.update_finished_listen(user)
             return file_progress
         return self.Meta.model.objects.none()
 

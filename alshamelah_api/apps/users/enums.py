@@ -11,3 +11,4 @@ class OTPStatus(Enum):
 class OTPTypes(object):
     Email = 'E'
     Phone = 'P'
+    Password = 'PW'

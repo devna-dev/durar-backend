@@ -1,20 +1,25 @@
 import datetime
 
+from allauth.account.forms import SetPasswordForm
 from allauth.account.models import EmailAddress
 from dateutil import relativedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.hashers import make_password
+from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Sum
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
+from rest_framework.exceptions import ValidationError
 from rolepermissions.checkers import has_permission
 from rolepermissions.roles import assign_role
 
-from .models import Note, NotificationSetting, Notification
+from .enums import OTPStatus
+from .models import Note, NotificationSetting, Notification, PasswordOTP
 from .roles import AppPermissions
 # Get the UserModel
-from ..points.models import PointBadge, UserPoints
+from ..points.models import PointBadge, UserPoints, UserStatistics
 
 UserModel = get_user_model()
 try:
@@ -50,14 +55,13 @@ class UserSerializer(serializers.ModelSerializer):
     notification_settings = NotificationSettingSerializer(source='notification_setting', read_only=True)
     age = serializers.SerializerMethodField()
     photo_url = serializers.SerializerMethodField()
-    points_badge = serializers.SerializerMethodField()
 
     class Meta:
         model = UserModel
         read_only_fields = ['email_verified', 'phone_verified', 'photo_url']
         fields = ['id', 'email', 'name', 'birthday', 'phone', 'gender', 'country', 'address', 'photo',
                   'email_verified', 'phone_verified', 'permissions', 'notification_settings', 'age', 'photo_url',
-                  'points_badge']
+                  'membership']
         extra_kwargs = {
             'photo': {'required': False, 'allow_null': True, 'write_only': True},
             'notification_settings': {'required': False, 'allow_null': True, 'read_only': True},
@@ -100,13 +104,6 @@ class UserSerializer(serializers.ModelSerializer):
         if self.context.get('request') is None: return None
         url = self.context.get('request').build_absolute_uri(user.photo_url) if user.photo_url else None
         return url if url else None
-
-    def get_points_badge(self, user: UserModel):
-        points = UserPoints.objects.filter(user_id=user.id).aggregate(total=Sum('point_num'))
-        if not points or not points['total']:
-            return None
-        badge = PointBadge.objects.filter(point_num__lte=points['total']).order_by('-point_num').first()
-        return badge.name if badge else None
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -280,6 +277,16 @@ class NoteSerializer(serializers.ModelSerializer):
         model = Note
         fields = ['id', 'note', 'user']
 
+    def create(self, validated_data):
+        note = super(NoteSerializer, self).create(validated_data)
+        UserStatistics.objects.update_notes_and_highlights(note.user)
+        return note
+
+    def update(self, instance, validated_data):
+        note = super(NoteSerializer, self).update(instance, validated_data)
+        UserStatistics.objects.update_notes_and_highlights(note.user)
+        return note
+
 
 class NotificationSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -288,3 +295,93 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'title', 'type', 'user', 'message', 'read', 'creation_time']
         read_only_fields = ['id', 'title', 'type', 'user', 'message', 'creation_time']
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    """
+    Serializer for requesting a password reset e-mail.
+    """
+    email = serializers.EmailField()
+
+    password_reset_form_class = PasswordResetForm
+
+    def get_email_options(self):
+        """Override this method to change default e-mail options"""
+        return {}
+
+    def validate_email(self, value):
+        # Create PasswordResetForm with the serializer
+        self.reset_form = self.password_reset_form_class(data=self.initial_data)
+        if not self.reset_form.is_valid():
+            raise serializers.ValidationError(self.reset_form.errors)
+
+        return value
+
+    def save(self):
+        request = self.context.get('request')
+        current_site = get_current_site(request)
+        # Set some values to trigger the send_email method.
+        code = None
+        try:
+            user = UserModel._default_manager.get(email=self.data['email'])
+            code = PasswordOTP.objects.generate(user.id).code
+        except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
+            # raise ValidationError({'email': ['Invalid value']})
+            pass
+        opts = {
+            'use_https': request.is_secure(),
+            'from_email': getattr(settings, 'DEFAULT_FROM_EMAIL'),
+            'request': request,
+
+            'subject_template_name': 'account/email/password_reset_key_subject.txt',
+            'email_template_name': 'account/email/password_reset_key_message.txt',
+            'html_email_template_name': 'account/email/password_reset_key_message.html',
+            'extra_email_context': {
+                'key': code,
+                "current_site": current_site,
+            }
+        }
+
+        opts.update(self.get_email_options())
+        self.reset_form.save(**opts)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    Serializer for requesting a password reset e-mail.
+    """
+    new_password1 = serializers.CharField(max_length=128)
+    new_password2 = serializers.CharField(max_length=128)
+    email = serializers.EmailField()
+    token = serializers.CharField()
+
+    set_password_form_class = SetPasswordForm
+
+    def custom_validation(self, attrs):
+        pass
+
+    def validate(self, attrs):
+        self._errors = {}
+
+        # Decode the uidb64 to uid to get User object
+        try:
+            self.user = UserModel._default_manager.get(email=attrs['email'])
+        except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
+            raise ValidationError({'email': ['Invalid value']})
+
+        self.custom_validation(attrs)
+        # Construct SetPasswordForm instance
+        self.set_password_form = self.set_password_form_class(
+            user=self.user, data={'password1': attrs['new_password1'], 'password2': attrs['new_password2']}
+        )
+        if not self.set_password_form.is_valid():
+            raise serializers.ValidationError(self.set_password_form.errors)
+        confirm = PasswordOTP.objects.verify(self.user.id, attrs['token'])
+        if confirm.__eq__(OTPStatus.Verified):
+            return attrs
+        if confirm in [OTPStatus.Expired, OTPStatus.Used]:
+            raise ValidationError({'token': ['Code expired']})
+        raise ValidationError({'token': ['Invalid value']})
+
+    def save(self):
+        return self.set_password_form.save()

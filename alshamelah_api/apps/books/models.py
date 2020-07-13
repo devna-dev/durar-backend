@@ -268,6 +268,7 @@ class ListenBook(BaseModel):
                              on_delete=models.CASCADE)
     book = models.ForeignKey(Book, related_name='listens', verbose_name=_(u'Book'), null=False,
                              on_delete=models.CASCADE)
+    finished = models.BooleanField(verbose_name=_('Finished'), default=False, null=False)
 
     def __str__(self):
         return (self.user.name if self.user and self.user.name else '') + ":" + (

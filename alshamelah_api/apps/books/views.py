@@ -34,9 +34,9 @@ from ..chatrooms.models import Seminar, Discussion, ChatRoom
 from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer, ChatRoomListSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
 from ..points.services import PointsService
+from ..points.models import UserStatistics
 from ..users.roles import AppPermissions
 from ..users.services import FCMService
-
 
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.filter(approved=True).prefetch_related('category', 'reviews')
@@ -196,7 +196,7 @@ class BookViewSet(viewsets.ModelViewSet):
         if page: page = int(page)
         if not page or not book.pages or not type(book.pages) != 'str' or page > len(book.pages):
             return Response(_('Page not found'), status=status.HTTP_400_BAD_REQUEST)
-        data = book.pages[page]['text']
+        data = book.pages[page - 1]['text']
         if request.user.id is None or not book.book_notes.exists():
             if not tashkeel and data:
                 data = strip_tashkeel(data)
@@ -210,8 +210,11 @@ class BookViewSet(viewsets.ModelViewSet):
                 reading.finished = finished
                 reading.page = page
                 reading.save()
+                if finished:
+                    UserStatistics.objects.update_finished_read(request.user.id)
             else:
                 ReadBook.objects.create(book_id=pk, user_id=request.user.id, page=page)
+            UserStatistics.objects.read(request.user.id, pk, page)
 
         return Response(data, status=status.HTTP_200_OK)
 
@@ -388,8 +391,12 @@ class BookReviewViewSet(NestedBookViewSet):
             return UserReviewListSerializer
         if self.action == 'retrieve':
             return UserReviewSerializer
-
         return BookReviewSerializer
+
+    def get_queryset(self):
+        if self.action in ['destroy', 'update', 'partial_update']:
+            return self.queryset.filter(user_id=self.request.user.id)
+        return self.queryset
 
 
 class CategoryBooksView(views.APIView):

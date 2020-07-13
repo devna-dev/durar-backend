@@ -3,13 +3,14 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Sum
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 from easy_thumbnails.fields import ThumbnailerImageField
 from model_utils import Choices
 
 from .enums import OTPTypes
-from .managers import EmailOTPManager, PhoneOTPManager
+from .managers import EmailOTPManager, PhoneOTPManager, PasswordOTPManager
 
 
 class User(AbstractUser):
@@ -25,13 +26,6 @@ class User(AbstractUser):
         ('F', _(u'Female')),
     )
 
-    MEMBERSHIP_CHOICES = Choices(
-        ('N', _(u'New')),
-        ('A', _(u'Active')),
-        ('G', _(u'Golden')),
-        ('U', _(u'Ultimate')),
-    )
-
     name = models.CharField(max_length=50, verbose_name=_(u'Name'), null=True, blank=True)
     phone = models.CharField(max_length=50, verbose_name=_(u'Phone number'),
                              blank=True, null=True)
@@ -40,8 +34,8 @@ class User(AbstractUser):
                                 verbose_name=_(u'Birth date'))
     gender = models.CharField(choices=GENDER_CHOICES, max_length=1, null=True,
                               blank=True, verbose_name=_(u'Gender'))
-    membership = models.CharField(choices=MEMBERSHIP_CHOICES, max_length=1, null=True,
-                                  blank=True, verbose_name=_(u'Membership'))
+    # membership = models.CharField(choices=MEMBERSHIP_CHOICES, max_length=1, null=True,
+    #                               blank=True, verbose_name=_(u'Membership'))
 
     address = models.CharField(max_length=1000, verbose_name=_(u'Address'),
                                blank=True)
@@ -67,6 +61,15 @@ class User(AbstractUser):
     def photo_url(self):
         return self.photo.url if self.photo else os.path.join(settings.MEDIA_URL, 'users', 'avatar.jpg')
 
+    @property
+    def membership(self):
+        from ..points.models import UserPoints, PointBadge
+        points = UserPoints.objects.filter(user_id=self.id).aggregate(total=Sum('point_num'))
+        if not points or not points['total']:
+            return None
+        badge = PointBadge.objects.filter(point_num__lte=points['total']).order_by('-point_num').first()
+        return badge.name if badge else None
+
     def __str__(self):
         return '{name} ({email})'.format(name=self.name if self.name else '', email=self.email)
 
@@ -86,6 +89,7 @@ class OTP(models.Model):
     TYPE_CHOICES = Choices(
         (OTPTypes.Email, _(u'Email')),
         (OTPTypes.Phone, _(u'Phone')),
+        (OTPTypes.Password, _(u'Passwod')),
     )
     user = models.ForeignKey(User, related_name='otps', verbose_name=_(u'OTP'), on_delete=models.CASCADE)
     code = models.CharField(max_length=6, verbose_name=_(u'Code'), null=False)
@@ -108,6 +112,11 @@ class PhoneOTP(OTP):
     class Meta:
         proxy = True
 
+class PasswordOTP(OTP):
+    objects = PasswordOTPManager()
+
+    class Meta:
+        proxy = True
 
 class Note(models.Model):
     user = models.ForeignKey(User, related_name='notes', verbose_name=_(u'Notes'), on_delete=models.CASCADE)
@@ -116,6 +125,10 @@ class Note(models.Model):
     creation_time = models.DateTimeField(auto_now_add=True, null=True)
     last_update_time = models.DateTimeField(auto_now=True, null=True)
 
+
+class DailyLogin(models.Model):
+    user = models.ForeignKey(User, related_name='logins', verbose_name=_(u'logins'), on_delete=models.CASCADE)
+    creation_time = models.DateTimeField(auto_now_add=True, null=True)
 
 class NotificationSetting(models.Model):
     user = models.OneToOneField(User, related_name='notification_setting', verbose_name=_(u'Notification Setting'),

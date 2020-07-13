@@ -9,6 +9,7 @@ from .models import Payment
 from .permissions import CanManagePayments
 from .serializers import PaymentSerializer, PaymentCreditCardSerializer
 from ..points.services import PointsService
+from ..points.models import UserStatistics
 from ..users.services import FCMService
 
 
@@ -40,6 +41,7 @@ class PaymentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.G
         payment = Payment.objects.filter(pk=pk)
         if payment:
             payment.update(status='success')
+            UserStatistics.objects.donation(payment.user)
             FCMService.notify_payment_success(payment.user)
             PointsService().donation_award(payment.user, payment)
         return Response(1)

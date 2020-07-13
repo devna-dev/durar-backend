@@ -6,6 +6,7 @@ from rest_framework import serializers
 from .models import Payment, CreditCardInfo
 from .services.my_fatoorah import initiate_payment
 from ..points.services import PointsService
+from ..points.models import UserStatistics
 from ..users.services import FCMService
 
 
@@ -72,6 +73,8 @@ class PaymentCreditCardSerializer(serializers.ModelSerializer):
             created.payment_card_type = response['Data']['CardInfo']['Brand']
             created.payment_response = response
             created.save()
-            FCMService.notify_payment_success(user)
-            PointsService().donation_award(user, created)
+            if created.status == 'success':
+                UserStatistics.objects.donation(user)
+                FCMService.notify_payment_success(user)
+                PointsService().donation_award(user, created)
         return created

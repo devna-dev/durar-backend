@@ -27,7 +27,9 @@ user_notification_settings_router = router.register(
 accounts_urls = list(url for url in rest_patterns if url.name != 'rest_user_details')
 user_urls = list(url for url in rest_patterns if url.name == 'rest_user_details')
 urlpatterns = [
-    path(r"accounts/verify-email/<key>/", views.confirm_email,
+    path(r"accounts/verify-email/", views.VerifyEmailView.as_view(),
+         name="account_confirm_email"),
+    path(r"accounts/verify-email/<key>/", views.ConfirmEmailView.as_view(),
          name="account_confirm_email"),
     path(r"accounts/verify-phone/", views.VerifyPhoneView.as_view(),
          name="account_verify_phone"),
@@ -35,7 +37,19 @@ urlpatterns = [
          name="account_confirm_phone"),
     url(r'accounts/', include(accounts_urls)),
     url(r'', include(user_urls)),
-    path(r"accounts/logout/", views.logout_view,
+    path(r"accounts/logout/", views.LogoutView.as_view(),
          name="account_logout"),
+    path(r"user/daily-login/", views.DailyLoginView.as_view(),
+         name="daily_login"),
+    path(r"user/share/app/", views.ShareAppView.as_view(),
+         name="share_app"),
+    path(r"user/share/book/", views.ShareBookView.as_view(),
+         name="share_book"),
+    path(r"user/share/lecture/", views.ShareLectureView.as_view(),
+         name="share_lecture"),
+    path(r"user/share/highlight/", views.ShareHighlightView.as_view(),
+         name="share_highlight"),
+    path(r"user/lecture-attendance/", views.AttendLectureView.as_view(),
+         name="attend_lecture"),
     url(r'', include(router.urls))
 ]

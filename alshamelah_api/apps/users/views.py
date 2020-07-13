@@ -1,3 +1,5 @@
+
+from django.utils import timezone
 from allauth.account.models import EmailAddress
 from django.conf import settings
 from django.contrib.auth import (
@@ -14,11 +16,12 @@ from rest_framework.views import APIView
 
 from .adapter import UserAdapter
 from .enums import OTPStatus
-from .models import EmailOTP, User, Note, NotificationSetting, Notification, PhoneOTP
+from .models import EmailOTP, User, Note, NotificationSetting, Notification, PhoneOTP, DailyLogin
 from .permissions import CanConfirmEmail, CanConfirmPhone
 from .serializers import UserSerializer, NoteSerializer, NotificationSerializer, NotificationSettingSerializer
 # Create your views here.
 from ..sms.models import SMS
+from ..points.models import UserStatistics
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -30,6 +33,34 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     # def retrieve(self, request):
     #     return super(UserViewSet, self).retrieve(request, pk=request.user.id)
+
+
+class VerifyEmailView(views.APIView):
+    permission_classes = [CanConfirmEmail]
+
+    def get(self, *args, **kwargs):
+        if not self.request.user or not self.request.user.id:
+            return Response(_('Invalid request'),
+                            status=status.HTTP_400_BAD_REQUEST)
+        user_id = self.request.user.id
+        email = EmailAddress.objects.filter(user_id=user_id, primary=True).first()
+        if email and email.verified:
+            return Response(_('Email already verified'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if email:
+            EmailOTP.objects.generate(user_id)
+            data = munchify({'email_address': email})
+            UserAdapter(self.request).send_confirmation_mail(self.request, data, False)
+            return Response(1)
+
+        return Response(_('Invalid user email'),
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    queryset = EmailOTP.objects.all()
 
 
 class ConfirmEmailView(views.APIView):
@@ -67,9 +98,6 @@ class ConfirmEmailView(views.APIView):
         return confirm
 
     queryset = EmailOTP.objects.all()
-
-
-confirm_email = ConfirmEmailView.as_view()
 
 
 class ConfirmPhoneView(views.APIView):
@@ -161,9 +189,6 @@ class LogoutView(APIView):
         return response
 
 
-logout_view = LogoutView.as_view()
-
-
 class UserNoteViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = NoteSerializer
@@ -186,3 +211,84 @@ class UserNotificationsViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, v
 
     def get_queryset(self):
         return Notification.objects.filter(user_id=self.request.user.id)
+
+class DailyLoginView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, *args, **kwargs):
+        if not self.request.user or not self.request.user.id:
+            return Response(_('Invalid request'),
+                            status=status.HTTP_400_BAD_REQUEST)
+        user = self.request.user
+        if not DailyLogin.objects.filter(user_id=user.id, creation_time__date=timezone.now().date()).exists():
+            DailyLogin.objects.create(user_id=user.id)
+            UserStatistics.objects.consecutive_login(user)
+        return Response(1,status=status.HTTP_201_CREATED)
+
+    queryset = DailyLogin.objects.none()
+
+
+class ShareAppView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, *args, **kwargs):
+        if not self.request.user or not self.request.user.id:
+            return Response(_('Invalid request'),
+                            status=status.HTTP_400_BAD_REQUEST)
+        user = self.request.user
+        UserStatistics.objects.share_app(user)
+        return Response(1,status=status.HTTP_201_CREATED)
+
+    queryset = UserStatistics.objects.none()
+
+class ShareBookView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, *args, **kwargs):
+        if not self.request.user or not self.request.user.id:
+            return Response(_('Invalid request'),
+                            status=status.HTTP_400_BAD_REQUEST)
+        user = self.request.user
+        UserStatistics.objects.share_book(user)
+        return Response(1,status=status.HTTP_201_CREATED)
+
+    queryset = UserStatistics.objects.none()
+
+class ShareLectureView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, *args, **kwargs):
+        if not self.request.user or not self.request.user.id:
+            return Response(_('Invalid request'),
+                            status=status.HTTP_400_BAD_REQUEST)
+        user = self.request.user
+        UserStatistics.objects.share_lecture(user)
+        return Response(1,status=status.HTTP_201_CREATED)
+
+    queryset = UserStatistics.objects.none()
+
+class ShareHighlightView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, *args, **kwargs):
+        if not self.request.user or not self.request.user.id:
+            return Response(_('Invalid request'),
+                            status=status.HTTP_400_BAD_REQUEST)
+        user = self.request.user
+        UserStatistics.objects.share_highlight(user)
+        return Response(1,status=status.HTTP_201_CREATED)
+
+    queryset = UserStatistics.objects.none()
+
+class AttendLectureView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, *args, **kwargs):
+        if not self.request.user or not self.request.user.id:
+            return Response(_('Invalid request'),
+                            status=status.HTTP_400_BAD_REQUEST)
+        user = self.request.user
+        UserStatistics.objects.attend_lecture(user)
+        return Response(1,status=status.HTTP_201_CREATED)
+
+    queryset = UserStatistics.objects.none()

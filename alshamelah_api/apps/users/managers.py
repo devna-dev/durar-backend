@@ -10,13 +10,13 @@ OTP_LENGTH = 6
 
 
 class OTPManager(models.Manager):
-    def generate(self, user):
-        codes = self.model.objects.filter(user_id=user, verified=False)
+    def generate(self, user_id):
+        codes = self.model.objects.filter(user_id=user_id, verified=False)
         otp = next((i for i in codes if i.creation_time + datetime.timedelta(seconds=self.DEFAULT_EXPIRY)
                     >= timezone.now() and not i.verified), None)
         if otp: return otp
         code = Utilities.generate(OTP_LENGTH)
-        return self.model.objects.create(code=code, user_id=user, verified=False)
+        return self.model.objects.create(code=code, user_id=user_id, verified=False)
 
     def verify(self, user, code, expiry_in_sec=None):
         if expiry_in_sec is None:
@@ -67,6 +67,20 @@ class PhoneOTPManager(OTPManager):
         kwargs.update({'type': OTPTypes.Phone})
         return super(PhoneOTPManager, self).update(**kwargs)
 
+class PasswordOTPManager(OTPManager):
+    DEFAULT_EXPIRY = settings.EMAIL_OTP_EXPIRY
+
+    def get_queryset(self):
+        return super(PasswordOTPManager, self).get_queryset().filter(
+            type=OTPTypes.Password)
+
+    def create(self, **kwargs):
+        kwargs.update({'type': OTPTypes.Password})
+        return super(PasswordOTPManager, self).create(**kwargs)
+
+    def update(self, **kwargs):
+        kwargs.update({'type': OTPTypes.Password})
+        return super(PasswordOTPManager, self).update(**kwargs)
 
 class Utilities(object):
 
