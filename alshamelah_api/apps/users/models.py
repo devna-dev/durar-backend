@@ -66,8 +66,10 @@ class User(AbstractUser):
         from ..points.models import UserPoints, PointBadge
         points = UserPoints.objects.filter(user_id=self.id).aggregate(total=Sum('point_num'))
         if not points or not points['total']:
-            return None
-        badge = PointBadge.objects.filter(point_num__lte=points['total']).order_by('-point_num').first()
+            points = 0
+        else:
+            points = points['total']
+        badge = PointBadge.objects.filter(point_num__lte=points).order_by('-point_num').first()
         return badge.name if badge else None
 
     def __str__(self):
