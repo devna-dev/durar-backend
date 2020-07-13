@@ -4,11 +4,11 @@ services:
   web:
     build: ./alshamelah_api
     image: oratio/virgo:latest
-    command: gunicorn alshamelah.wsgi:application --bind 0.0.0.0:8001
+    command: gunicorn alshamelah.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - ./alshamelah_api:/usr/src/app
     ports:
-      - "8001:8001"
+      - "8000:8000"
     env_file:
       - ./.env
     depends_on:
