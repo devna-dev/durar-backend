@@ -129,8 +129,6 @@ class UserAchievement(BaseModel):
 
     @property
     def icon(self):
-        print(os.path.exists(getattr(self.achievement,self.category + '_icon').path))
-        print(getattr(self.achievement,self.category + '_icon').path)
         return getattr(self.achievement,self.category + '_icon').url
 
     @property
