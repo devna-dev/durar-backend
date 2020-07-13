@@ -13,7 +13,7 @@ RUN pip install --upgrade pip
 
 # install psycopg2 dependencies
 RUN apk update \
-    && apk add postgresql-dev gcc python3-dev musl-dev jpeg-dev zlib-dev libjpeg \ # mediainfo ffmpeg
+    && apk add postgresql-dev gcc python3-dev musl-dev jpeg-dev zlib-dev libjpeg \
     && pip install psycopg2
 
 # install dependencies
