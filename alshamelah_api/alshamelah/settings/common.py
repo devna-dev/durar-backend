@@ -146,9 +146,9 @@ REST_AUTH_SERIALIZERS = {
     'USER_DETAILS_SERIALIZER': 'apps.users.serializers.UserSerializer',
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
-    ),
-    'PASSWORD_RESET_SERIALIZER': 'apps.users.serializers.PasswordResetSerializer',
-    'PASSWORD_RESET_CONFIRM_SERIALIZER': 'apps.users.serializers.PasswordResetConfirmSerializer'
+    )
+    # 'PASSWORD_RESET_SERIALIZER': 'apps.users.serializers.PasswordResetSerializer',
+    # 'PASSWORD_RESET_CONFIRM_SERIALIZER': 'apps.users.serializers.PasswordResetConfirmSerializer'
 }
 REST_AUTH_REGISTER_SERIALIZERS = {
     'REGISTER_SERIALIZER': 'apps.users.serializers.RegisterSerializer',

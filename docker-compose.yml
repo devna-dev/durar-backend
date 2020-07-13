@@ -7,7 +7,6 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./alshamelah_api:/usr/src/app
-      - ./media:/usr/src/app/media
     ports:
       - "8000:8000"
 #      - "80:8000"
