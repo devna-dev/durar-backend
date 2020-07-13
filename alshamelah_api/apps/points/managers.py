@@ -402,7 +402,7 @@ class UserStatisticsManager(models.Manager):
             if share_app_ach.category:
                 UserAchievement.objects.update_or_create(user_id=user.id, achievement_id=share_app_achievement.id,
                                                          defaults={'category': share_app_ach.category,
-                                                                   'points': data.share_app_ach})
+                                                                   'points': data.app_share_count})
 
     def share_book(self, user):
         data = self.get_data(user.id)
