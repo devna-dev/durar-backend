@@ -408,7 +408,7 @@ class BookMarkSerializer(NestedBookSerializer):
 
 
 class BookNoteSerializer(NestedBookSerializer):
-    tashkeel_on = serializers.BooleanField()
+    tashkeel_on = serializers.BooleanField(write_only=True)
 
     class Meta(NestedBookSerializer.Meta):
         model = BookNote
