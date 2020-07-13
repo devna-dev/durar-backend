@@ -476,8 +476,7 @@ class BookReviewSerializer(NestedBookSerializer):
         return review
 
 
-class UserReviewSerializer(serializers.ModelSerializer):
-    book = BookListSerializer()
+class UserReviewWriteSerializer(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()
     like_id = serializers.SerializerMethodField()
 
@@ -495,6 +494,10 @@ class UserReviewSerializer(serializers.ModelSerializer):
         return like.id if like else None
 
 
+class UserReviewSerializer(UserReviewWriteSerializer):
+    book = BookListSerializer(read_only=True, required=False)
+
+
 class UserReviewListSerializer(serializers.ModelSerializer):
     book = BookListSerializer()
     user = UserProfileSerializer()
@@ -503,7 +506,7 @@ class UserReviewListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BookReview
-        fields = ['book', 'user', 'likes', 'id', 'like_id']
+        fields = ['book', 'user', 'likes', 'id', 'like_id', 'comment', 'creation_time']
 
     def get_likes(self, review):
         return review.likes.count()
@@ -637,6 +640,7 @@ class UserBookNoteListSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookNote
         exclude = ['user', 'tashkeel_start', 'tashkeel_end']
+
 
 class BookSearchSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())

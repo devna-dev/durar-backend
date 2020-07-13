@@ -10,3 +10,10 @@ class Legal(BaseModel):
 
     class Meta:
         verbose_name_plural = "Privacy Policy, Terms & Conditions"
+
+class AppUrls(BaseModel):
+    google = models.CharField(max_length=1000, verbose_name=_('Google Play Store URL'))
+    apple = models.CharField(max_length=1000, verbose_name=_('Apple Store URL'))
+
+    class Meta:
+        verbose_name_plural = "App Urls"

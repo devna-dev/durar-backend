@@ -25,7 +25,7 @@ class OTPManager(models.Manager):
         if not codes.exists():
             return OTPStatus.Invalid
         otp = next((i for i in codes if i.creation_time + datetime.timedelta(seconds=expiry_in_sec)
-                    <= timezone.now() and not i.verified), None)
+                    >= timezone.now() and not i.verified), None)
         if otp:
             otp.verified = True
             otp.save()

@@ -28,7 +28,7 @@ from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, 
     BookSuggestionSerializer, DownloadBookSerializer, BookSearchSerializer, BookSearchListSerializer, \
     ListenProgressSerializer, UserBookListSerializer, UploadPaperSerializer, PaperListSerializer, SubmitPaperSerializer, \
     UploadThesisSerializer, SubmitThesisSerializer, ThesisListSerializer, UserReviewSerializer, \
-    UserReviewListSerializer, UserBookNoteListSerializer
+    UserReviewListSerializer, UserBookNoteListSerializer, UserReviewWriteSerializer
 from .util import ArabicUtilities
 from ..chatrooms.models import Seminar, Discussion, ChatRoom
 from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer, ChatRoomListSerializer
@@ -209,6 +209,7 @@ class BookViewSet(viewsets.ModelViewSet):
                 finished = reading.page == page - 1
                 reading.finished = finished
                 reading.page = page
+                reading.save()
             else:
                 ReadBook.objects.create(book_id=pk, user_id=request.user.id, page=page)
 
@@ -385,7 +386,10 @@ class BookReviewViewSet(NestedBookViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return UserReviewListSerializer
-        return UserReviewSerializer
+        if self.action == 'retrieve':
+            return UserReviewSerializer
+
+        return BookReviewSerializer
 
 
 class CategoryBooksView(views.APIView):
