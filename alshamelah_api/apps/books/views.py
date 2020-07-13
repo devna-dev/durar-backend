@@ -395,8 +395,9 @@ class BookReviewViewSet(NestedBookViewSet):
 
     def get_queryset(self):
         if self.action in ['destroy', 'update', 'partial_update']:
-            return self.queryset.filter(user_id=self.request.user.id)
-        return self.queryset
+            return self.queryset.filter(user_id=self.request.user.id, book_id=self.book.id)
+        return self.queryset.filter(book_id=self.book.id)
+
 
 
 class CategoryBooksView(views.APIView):
