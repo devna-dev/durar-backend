@@ -438,7 +438,6 @@ class BookNoteSerializer(NestedBookSerializer):
             validated_data['tashkeel_end'] = mark_position.end
 
         del validated_data['tashkeel_on']
-        self.data.pop('tashkeel_on')
         note = super(BookNoteSerializer, self).create(validated_data)
         UserStatistics.objects.update_notes_and_highlights(note.user)
         return note
