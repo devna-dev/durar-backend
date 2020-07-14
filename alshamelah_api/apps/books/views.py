@@ -613,6 +613,7 @@ class PopularBooksView(views.APIView):
 
 class PopularBooksViewSet(viewsets.GenericViewSet):
     permission_classes = (AllowAny,)
+    serializer_class = BookListSerializer
 
     @property
     def pagination_class(self):
