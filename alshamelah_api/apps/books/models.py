@@ -72,7 +72,7 @@ class Book(BaseModel):
         return os.path.join(self.type + ('s' if not self.type.endswith('s') else ''), str(self.pk))
 
     def __str__(self):
-        return self.title
+        return self.title if self.title else ''
 
     def save(self, *args, **kwargs):
         if self.pk is None:
@@ -131,7 +131,7 @@ class BookReview(BaseModel):
     comment = models.TextField(verbose_name=_(u'Comment'), null=True)
 
     def __str__(self):
-        return self.comment
+        return self.comment if self.comment else ''
 
 
 class BookReviewLike(BaseModel):
@@ -141,7 +141,7 @@ class BookReviewLike(BaseModel):
                                on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.user.name + ' like:' + self.review.comment
+        return (self.user.name if self.user and self.user.name else '') + ' like:' + str(self.review)
 
 
 class BookNote(BaseModel):
@@ -158,7 +158,7 @@ class BookNote(BaseModel):
     tashkeel_end = models.PositiveIntegerField(verbose_name=_(u'Tashkeel End'), null=False)
 
     def __str__(self):
-        return self.note
+        return self.note if self.note else ''
 
 
 class BookMark(BaseModel):
@@ -169,7 +169,7 @@ class BookMark(BaseModel):
     page = models.PositiveSmallIntegerField(verbose_name=_(u'Page'))
 
     def __str__(self):
-        return self.page
+        return self.page if self.page else ''
 
 
 class BookMedia(BaseModel):
@@ -192,7 +192,7 @@ class BookMedia(BaseModel):
     approved = models.BooleanField(verbose_name=_(u'Approved'), default=False)
 
     def __str__(self):
-        return self.book.title + '(' + self.type + "):" + self.url.url
+        return str(self.book if self.book else '') + '(' + self.type + "):" + (self.url.url if self.url else '')
 
 
 class BookAudio(BookMedia):
@@ -235,8 +235,7 @@ class FavoriteBook(BaseModel):
                              on_delete=models.CASCADE)
 
     def __str__(self):
-        return (self.user.name if self.user and self.user.name else '') + ":" + (
-            self.book.title if self.book and self.book.title else '')
+        return (self.user.name if self.user and self.user.name else '') + ":" + str(self.book if self.book else '')
 
 
 class ReadBook(BaseModel):
@@ -248,8 +247,7 @@ class ReadBook(BaseModel):
     finished = models.BooleanField(null=False, verbose_name=_('Finished'), default=False)
 
     def __str__(self):
-        return (self.user.name if self.user and self.user.name else '') + ":" + (
-            self.book.title if self.book and self.book.title else '')
+        return (self.user.name if self.user and self.user.name else '') + ":" + str(self.book if self.book else '')
 
 
 class DownloadBook(BaseModel):
@@ -259,8 +257,7 @@ class DownloadBook(BaseModel):
                              on_delete=models.CASCADE)
 
     def __str__(self):
-        return (self.user.name if self.user and self.user.name else '') + ":" + (
-            self.book.title if self.book and self.book.title else '')
+        return (self.user.name if self.user and self.user.name else '') + ":" + str(self.book if self.book else '')
 
 
 class ListenBook(BaseModel):
@@ -271,8 +268,7 @@ class ListenBook(BaseModel):
     finished = models.BooleanField(verbose_name=_('Finished'), default=False, null=False)
 
     def __str__(self):
-        return (self.user.name if self.user and self.user.name else '') + ":" + (
-            self.book.title if self.book and self.book.title else '')
+        return (self.user.name if self.user and self.user.name else '') + ":" + str(self.book if self.book else '')
 
 
 class ListenProgress(BaseModel):
@@ -306,7 +302,7 @@ class SearchBook(BaseModel):
     page_size = models.IntegerField(verbose_name=_('Page Size'), null=True)
 
     def __str__(self):
-        return self.user.name + " search @ " + str(self.creation_time)
+        return (self.user.name if self.user and self.user.name else '') + " search @ " + str(self.creation_time)
 
     class Meta:
         ordering = ['-creation_time']
@@ -324,7 +320,7 @@ class BookSuggestion(BaseModel):
     url = models.URLField(verbose_name=_(u'Book Url'), null=False, blank=False)
 
     def __str__(self):
-        return self.user.name + ":" + self.title + ('(%s)' % self.author)
+        return (self.user.name if self.user and self.user.name else '') + ":" + self.title + ('(%s)' % self.author)
 
 
 class MarkPosition(object):
