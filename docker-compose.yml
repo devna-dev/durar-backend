@@ -2,6 +2,7 @@ version: '3.7'
 services:
 
   web:
+    restart: always
     build: ./alshamelah_api
     image: oratio/virgo:latest
     command: gunicorn alshamelah.wsgi:application --bind 0.0.0.0:8000
