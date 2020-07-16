@@ -127,6 +127,9 @@ class Note(models.Model):
     creation_time = models.DateTimeField(auto_now_add=True, null=True)
     last_update_time = models.DateTimeField(auto_now=True, null=True)
 
+    class Meta:
+        ordering = ['-creation_time']
+
 
 class DailyLogin(models.Model):
     user = models.ForeignKey(User, related_name='logins', verbose_name=_(u'logins'), on_delete=models.CASCADE)

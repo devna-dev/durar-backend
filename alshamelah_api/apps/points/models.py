@@ -1,9 +1,10 @@
 import os
 
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
-from django.contrib.postgres.fields import JSONField
+
 from ..core.models import BaseModel
 
 
@@ -96,6 +97,7 @@ class Achievement(BaseModel):
     silver = models.PositiveSmallIntegerField(verbose_name=_('Required number for silver'))
     gold = models.PositiveSmallIntegerField(verbose_name=_('Required number for gold'))
     diamond = models.PositiveSmallIntegerField(verbose_name=_('Required number for diamond'))
+    default_icon = models.ImageField(verbose_name=_(u'Default Achievement Icon'), upload_to=get_path)
     bronze_icon = models.ImageField(verbose_name=_(u'Bronze Achievement Icon'), upload_to=get_path)
     silver_icon = models.ImageField(verbose_name=_(u'Silver Achievement Icon'), upload_to=get_path)
     gold_icon = models.ImageField(verbose_name=_(u'Gold Achievement Icon'), upload_to=get_path)

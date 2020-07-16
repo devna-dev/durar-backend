@@ -7,13 +7,13 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse_lazy
 from rest_framework.utils import json
 
-from ..points.models import UserStatistics
 from .models import Book, BookMark, BookAudio, BookPDF, BookNote, BookReview, \
     BookReviewLike, ReadBook, FavoriteBook, DownloadBook, ListenBook, BookSuggestion, SearchBook, ListenProgress, Paper, \
     Thesis
 from .util import ArabicUtilities
 from ..authors.serializers import AuthorSerializer
 from ..categories.serializers import CategorySerializer, SubCategorySerializer, CategoryForBookSerializer
+from ..points.models import UserStatistics
 from ..users.serializers import UserProfileSerializer
 
 
@@ -49,6 +49,7 @@ class BookListSerializer(serializers.ModelSerializer):
     download_url = serializers.SerializerMethodField('get_download_url')
     cover_image = serializers.SerializerMethodField('get_cover_image')
     is_favorite = serializers.SerializerMethodField()
+    favorite = serializers.SerializerMethodField()
     # searches = serializers.SerializerMethodField('get_searches')
     has_audio = serializers.SerializerMethodField('does_have_audio')
     category = CategoryForBookSerializer()
@@ -58,7 +59,8 @@ class BookListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = ['id', 'title', 'author', 'category', 'sub_category', 'rating', 'page_count', 'downloads', 'listens',
-                  'readers', 'reviews', 'has_audio', 'pdf', 'download_url', 'cover_image', 'description', 'is_favorite']
+                  'readers', 'reviews', 'has_audio', 'pdf', 'download_url', 'cover_image', 'description', 'is_favorite',
+                  'favorite']
 
     @property
     def request(self):
@@ -103,9 +105,13 @@ class BookListSerializer(serializers.ModelSerializer):
         return url if url else None
 
     def get_is_favorite(self, book):
+        return self.get_favorite(book) is not None
+
+    def get_favorite(self, book):
         if not self.request or not self.request.user.id or not hasattr(self.request.user, 'favorite_books'):
             return False
-        return self.request.user.favorite_books.filter(book_id=book.id).exists()
+        favorite = self.request.user.favorite_books.filter(book_id=book.id).first()
+        return favorite.id if favorite else None
 
 
 class UserBookListSerializer(BookListSerializer):

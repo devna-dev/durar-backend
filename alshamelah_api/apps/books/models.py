@@ -1,5 +1,4 @@
 import os
-from mutagen.mp3 import MP3
 from datetime import datetime
 
 from django.conf import settings
@@ -9,6 +8,7 @@ from django.db import models
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
+from mutagen.mp3 import MP3
 
 from .managers import BookAudioManager, BookPDFManager, PaperManager, ThesisManager, BookManager
 from ..core.models import BaseModel
@@ -159,6 +159,9 @@ class BookNote(BaseModel):
 
     def __str__(self):
         return self.note if self.note else ''
+
+    class Meta:
+        ordering = ['-creation_time']
 
 
 class BookMark(BaseModel):

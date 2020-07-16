@@ -9,8 +9,15 @@ class UserPointsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class AchievementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Achievement
+        fields = ['type', 'title', 'default_icon']
+
+
 class UserAchievementSerializer(serializers.ModelSerializer):
     icon = serializers.SerializerMethodField()
+
     class Meta:
         model = UserAchievement
         fields = ['title', 'category', 'points', 'icon', 'type']
