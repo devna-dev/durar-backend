@@ -1,8 +1,8 @@
 from django.contrib import admin
 
 from .forms import BookForm, PaperForm, BookChoiceField
-from ..categories.models import SubCategory
 from .models import Book, Thesis, Paper, BookAudio, BookPDF
+from ..categories.models import SubCategory
 from ..points.services import PointsService
 from ..users.services import FCMService
 
@@ -18,8 +18,8 @@ class BookAdmin(admin.ModelAdmin):
         'category',
         'approved',
     )
-    exclude = ['type']
-    readonly_fields = ('uploader',)
+    exclude = ['type', 'data', 'content']
+    readonly_fields = ('page_count', 'uploader',)
 
     def save_model(self, request, obj, form, change):
         if change:
@@ -73,8 +73,8 @@ class PaperAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(BookAudio, BookPDF)
-class BookAudioAdmin(admin.ModelAdmin):
+@admin.register(BookPDF)
+class BookPDFAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'book_name',
@@ -105,3 +105,32 @@ class BookAudioAdmin(admin.ModelAdmin):
         if db_field.name == "book":
             return BookChoiceField(Book.objects.get_all())
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(BookAudio)
+class BookAudioAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'book_name',
+        'book_type',
+        'url',
+        'approved',
+    )
+    exclude = ['type', 'duration']
+    readonly_fields = ('user',)
+
+    def book_name(self, obj):
+        return obj.book
+
+    def book_type(self, obj):
+        return obj.book.type
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            if obj.type == 'audio':
+                old = BookAudio.objects.filter(pk=obj.pk).first()
+                if not old.approved and obj.approved and old.user:
+                    FCMService.notify_audio_approved(old.user)
+                    PointsService().book_approval_award(old.user, old.pk)
+
+        super().save_model(request, obj, form, change)
