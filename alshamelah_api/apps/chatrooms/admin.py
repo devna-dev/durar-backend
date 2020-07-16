@@ -5,10 +5,11 @@ from django.db.models import Q
 
 from .models import Seminar, Discussion, DiscussionRegistration, SeminarRegistration, ArchivedSeminar, \
     ArchivedDiscussion, ArchivedDiscussionRegistration, ArchivedSeminarRegistration
+from ..core.admin import BaseModelAdmin
 
 
 @admin.register(Seminar, Discussion)
-class ChatRoomAdmin(admin.ModelAdmin):
+class ChatRoomAdmin(BaseModelAdmin):
     list_display = (
         'id',
         'title',
@@ -42,7 +43,7 @@ class ArchivedChatRoomAdmin(ChatRoomAdmin):
 
 
 @admin.register(DiscussionRegistration, SeminarRegistration)
-class RegistrationAdmin(admin.ModelAdmin):
+class RegistrationAdmin(BaseModelAdmin):
     list_display = (
         'room_name',
         'user_name',

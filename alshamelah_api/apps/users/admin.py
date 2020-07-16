@@ -1,5 +1,6 @@
 from allauth.account.models import EmailAddress
 from allauth.socialaccount.models import SocialAccount, SocialToken, SocialApp
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
@@ -12,6 +13,7 @@ from rolepermissions.admin import RolePermissionsUserAdminMixin
 from .forms import CustomUserChangeForm
 from .models import CustomNotification
 from .services import FCMService
+from ..core.admin import BaseModelAdmin
 
 User = get_user_model()
 
@@ -37,10 +39,11 @@ class CustomUserAdmin(RolePermissionsUserAdminMixin, UserAdmin):
     )
     model = User
     list_display = ['email', 'name', ]
+    list_per_page = settings.ADMIN_LIST_PAGE_SIZE
 
 
 @admin.register(CustomNotification)
-class NotificationAdmin(admin.ModelAdmin):
+class NotificationAdmin(BaseModelAdmin):
     list_display = (
         'id',
         'title',

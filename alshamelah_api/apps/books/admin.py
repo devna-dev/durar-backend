@@ -3,12 +3,13 @@ from django.contrib import admin
 from .forms import BookForm, PaperForm, BookChoiceField
 from .models import Book, Thesis, Paper, BookAudio, BookPDF
 from ..categories.models import SubCategory
+from ..core.admin import BaseModelAdmin
 from ..points.services import PointsService
 from ..users.services import FCMService
 
 
 @admin.register(Book)
-class BookAdmin(admin.ModelAdmin):
+class BookAdmin(BaseModelAdmin):
     change_form_template = 'books/admin/change_form.html'
     add_form_template = change_form_template
     form = BookForm
@@ -46,7 +47,7 @@ class BookAdmin(admin.ModelAdmin):
 
 
 @admin.register(Paper, Thesis)
-class PaperAdmin(admin.ModelAdmin):
+class PaperAdmin(BaseModelAdmin):
     list_display = (
         'id',
         'title',
@@ -74,7 +75,7 @@ class PaperAdmin(admin.ModelAdmin):
 
 
 @admin.register(BookPDF)
-class BookPDFAdmin(admin.ModelAdmin):
+class BookPDFAdmin(BaseModelAdmin):
     list_display = (
         'id',
         'book_name',
@@ -108,7 +109,7 @@ class BookPDFAdmin(admin.ModelAdmin):
 
 
 @admin.register(BookAudio)
-class BookAudioAdmin(admin.ModelAdmin):
+class BookAudioAdmin(BaseModelAdmin):
     list_display = (
         'id',
         'book_name',

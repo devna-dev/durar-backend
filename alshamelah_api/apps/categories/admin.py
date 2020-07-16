@@ -1,10 +1,11 @@
 from django.contrib import admin
 
 from .models import Category, SubCategory
+from ..core.admin import BaseModelAdmin
 
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(BaseModelAdmin):
     list_display = (
         'id',
         'name',
@@ -12,7 +13,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 @admin.register(SubCategory)
-class SubCategoryAdmin(admin.ModelAdmin):
+class SubCategoryAdmin(BaseModelAdmin):
     list_display = (
         'id',
         'name',

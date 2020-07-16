@@ -1,10 +1,11 @@
 from django.contrib import admin
 
 from .models import SMS
+from ..core.admin import BaseModelAdmin
 
 
 @admin.register(SMS)
-class SMSAdmin(admin.ModelAdmin):
+class SMSAdmin(BaseModelAdmin):
     list_display = (
         'username',
         'phone',

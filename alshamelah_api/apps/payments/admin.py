@@ -1,10 +1,11 @@
 from django.contrib import admin
 
 from .models import Payment
+from ..core.admin import BaseModelAdmin
 
 
 @admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
+class PaymentAdmin(BaseModelAdmin):
     list_display = (
         'id',
         'amount',
