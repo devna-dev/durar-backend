@@ -163,6 +163,7 @@ class Notification(models.Model):
         ('payment_rejected', _(u'Payment Rejected')),
         ('support_request', _(u'Support Request')),
         ('points_awarded', _(u'Points awarded')),
+        ('achievement_awarded', _(u'Achievement awarded')),
         ('admin_notification', _(u'Admin Notification')),
     )
     user = models.ForeignKey(User, related_name='notifications', verbose_name=_(u'Notifications'),

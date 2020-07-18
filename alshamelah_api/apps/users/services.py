@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
+from model_utils import Choices
 from pyfcm import FCMNotification
 
 from .models import Notification, NotificationSetting
@@ -98,6 +99,23 @@ class FCMService(object):
             return None
         return FCMService.notify(_('Points awarded'), _('Congratulations, you earned {points}'.format(points=points)),
                                  'points_awarded',
+                                 user)
+
+    @staticmethod
+    def notify_achievement_awarded(user, achievement):
+        device_id = FCMService._get_device_id(user)
+        if not device_id or not user.notification_setting.points_awarded:
+            return None
+        type_choices = Choices(
+            ('bronze', _(u'برونزي')),
+            ('silver', _(u'فضي')),
+            ('gold', _(u'ذهبي')),
+            ('diamond', _(u'ماسي')),
+        )
+        return FCMService.notify(_('New Achievement'), _(
+            'Congratulations, you earned a new achievement {achievement} ({type})'.format(
+                achievement=achievement.achievement.title, type=type_choices[achievement.category])),
+                                 'achievement_awarded',
                                  user)
 
     @staticmethod

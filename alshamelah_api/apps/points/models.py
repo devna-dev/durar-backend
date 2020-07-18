@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from ..core.models import BaseModel
+from ..users.services import FCMService
 
 
 class PointSetting(BaseModel):
@@ -131,11 +132,17 @@ class UserAchievement(BaseModel):
 
     @property
     def icon(self):
-        return getattr(self.achievement,self.category + '_icon').url
+        return getattr(self.achievement, self.category + '_icon').url
 
     @property
     def type(self):
         return self.achievement.type
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        saved = super(UserAchievement, self).save(force_insert, force_update, using, update_fields)
+        FCMService.notify_achievement_awarded(self.user, self)
+        return saved
 
 
 class UserStatistics(BaseModel):
@@ -143,7 +150,7 @@ class UserStatistics(BaseModel):
     objects = UserStatisticsManager()
     user = models.ForeignKey('users.User', related_name='statistics', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
-    reads = JSONField(null=True) #
+    reads = JSONField(null=True)  #
     book_note_count = models.PositiveSmallIntegerField(default=0)
     user_note_count = models.PositiveSmallIntegerField(default=0)
     book_highlight_count = models.PositiveSmallIntegerField(default=0)
