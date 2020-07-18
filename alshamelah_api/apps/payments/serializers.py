@@ -5,8 +5,8 @@ from rest_framework import serializers
 
 from .models import Payment, CreditCardInfo
 from .services.my_fatoorah import initiate_payment
-from ..points.services import PointsService
 from ..points.models import UserStatistics
+from ..points.services import PointsService
 from ..users.services import FCMService
 
 
@@ -68,13 +68,20 @@ class PaymentCreditCardSerializer(serializers.ModelSerializer):
             FCMService.notify_payment_rejected(user)
         elif payment.status_code == 200:
             response = payment.json()
-            created.status = str(response['Data']['Status']).lower()
-            created.payment_card = response['Data']['CardInfo']['Number']
-            created.payment_card_type = response['Data']['CardInfo']['Brand']
+            created.status = str(response['Data']['Status']).lower() if response['Data'] else 'error'
+            if created.status == 'success':
+                created.payment_card = response['Data']['CardInfo']['Number']
+                created.payment_card_type = response['Data']['CardInfo']['Brand']
             created.payment_response = response
             created.save()
             if created.status == 'success':
                 UserStatistics.objects.donation(user)
                 FCMService.notify_payment_success(user)
                 PointsService().donation_award(user, created)
+            elif response['Data'] and response['Data']['ErrorMessage']:
+                FCMService.notify_payment_rejected(user)
+                raise serializers.ValidationError(response['Data']['ErrorMessage'])
+            else:
+                FCMService.notify_payment_rejected(user)
+                raise serializers.ValidationError(response['ValidationErrors'][0])
         return created
