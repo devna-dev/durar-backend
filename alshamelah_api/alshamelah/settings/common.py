@@ -275,6 +275,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_USE_TLS = False
 EMAIL_HOST = 'mail.internet-svc.com'
 EMAIL_HOST_USER = 'al-shamelah@internet-svc.com'
+ADMIN_EMAIL = 'adhm_n4@yahoo.com'
 EMAIL_HOST_PASSWORD = 'J*Pb4ATyb4@_KCn8'
 EMAIL_PORT = 8889
 DEFAULT_FROM_EMAIL = 'al-shamelah@internet-svc.com'

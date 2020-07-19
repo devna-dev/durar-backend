@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 
 from .models import PointSetting, PointBadge, Achievement
@@ -14,7 +15,7 @@ class PointsSettingAdmin(admin.ModelAdmin):
     )
 
     def has_add_permission(self, request):
-        return request.user.email == 'adhm_n4@yahoo.com'
+        return request.user.email == settings.ADMIN_EMAIL
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -39,7 +40,7 @@ class AchievementAdmin(admin.ModelAdmin):
     )
 
     def has_add_permission(self, request):
-        return request.user.email == 'adhm_n4@yahoo.com'
+        return request.user.email == settings.ADMIN_EMAIL
 
     def has_delete_permission(self, request, obj=None):
         return False
