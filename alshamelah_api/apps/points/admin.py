@@ -37,3 +37,9 @@ class AchievementAdmin(admin.ModelAdmin):
         'gold',
         'diamond'
     )
+
+    def has_add_permission(self, request):
+        return request.user.email == 'adhm_n4@yahoo.com'
+
+    def has_delete_permission(self, request, obj=None):
+        return False

