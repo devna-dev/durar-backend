@@ -28,6 +28,13 @@ class PaymentCreditCardSerializer(serializers.ModelSerializer):
     amount = serializers.DecimalField(min_value=0.1, decimal_places=2, max_digits=10)
     currency = serializers.CharField(default='USD', max_length=3, min_length=3, required=False)
 
+    def validated_currency(self, value):
+        if value and len(value) != 3:
+            raise serializers.ValidationError(_('Invalid currency code'))
+        if not value:
+            return value
+        return str(value).upper()
+
     # def validate_expiry_year(self, expiry_year):
     #     year = datetime.now().year
     #     if year > expiry_year:
@@ -60,15 +67,17 @@ class PaymentCreditCardSerializer(serializers.ModelSerializer):
             created.status = 'failed'
             created.save()
             FCMService.notify_payment_rejected(user)
-            return created
+            raise serializers.ValidationError(str(ex.message))
         if payment.status_code > 210:
             created.payment_response = payment.json()
             created.status = 'failed'
             created.save()
             FCMService.notify_payment_rejected(user)
+
+            raise serializers.ValidationError('something went wrong')
         elif payment.status_code == 200:
             response = payment.json()
-            created.status = str(response['Data']['Status']).lower() if response['Data'] else 'error'
+            created.status = 'success' if response['IsSuccess'] else 'failed'
             if created.status == 'success':
                 created.payment_card = response['Data']['CardInfo']['Number']
                 created.payment_card_type = response['Data']['CardInfo']['Brand']
@@ -83,5 +92,19 @@ class PaymentCreditCardSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(response['Data']['ErrorMessage'])
             else:
                 FCMService.notify_payment_rejected(user)
-                raise serializers.ValidationError(response['ValidationErrors'][0])
+                raise serializers.ValidationError(
+                    response['Message'] if response['Message'] else 'Something went wrong')
         return created
+
+
+class PaymentResponse(object):
+    def __init__(self, is_success, message, details):
+        self.is_success = is_success
+        self.message = message
+        self.details = details
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return self.message

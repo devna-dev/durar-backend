@@ -1,15 +1,17 @@
 import json
 
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .models import Payment
 from .permissions import CanManagePayments
 from .serializers import PaymentSerializer, PaymentCreditCardSerializer
-from ..points.services import PointsService
 from ..points.models import UserStatistics
+from ..points.services import PointsService
 from ..users.services import FCMService
 
 
@@ -29,10 +31,17 @@ class PaymentsViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.G
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(context={'request': request}, data=request.data)
-        if serializer.is_valid():
-            data = serializer.save()
-            if not data or str(data.status).lower() == 'failed':
-                return Response(data.payment_response['Message'], status=status.HTTP_400_BAD_REQUEST)
+        try:
+            if serializer.is_valid(raise_exception=True):
+                data = serializer.save()
+                if not data or str(data.status).lower() == 'failed':
+                    return Response(data.payment_response['Message'], status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as ex:
+            return Response(
+                {'message': (ex.args[0] if not serializer.errors else _('Invalid data')), 'is_success': False},
+                status=status.HTTP_400_BAD_REQUEST)
 
         return Response(True, status=status.HTTP_201_CREATED)
 

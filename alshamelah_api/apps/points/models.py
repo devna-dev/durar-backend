@@ -37,7 +37,7 @@ class UserPoints(BaseModel):
     )
     user = models.ForeignKey('users.User', related_name='points', verbose_name=_(u'User'), null=False,
                              on_delete=models.CASCADE)
-    point_num = models.PositiveSmallIntegerField(verbose_name=_(u'Awarded points'), null=False)
+    point_num = models.PositiveIntegerField(verbose_name=_(u'Awarded points'), null=False)
     type = models.CharField(max_length=20, choices=AWARD_TYPE_CHOICES, verbose_name=_(u'Awarded For'))
     action_id = models.PositiveIntegerField(verbose_name=_(U'Transaction Id'), null=True, blank=False)
 
@@ -47,7 +47,7 @@ class UserPoints(BaseModel):
 
 class PointBadge(BaseModel):
     name = models.CharField(max_length=500, verbose_name=_(u'Name'), null=False, blank=False)
-    point_num = models.PositiveSmallIntegerField(verbose_name=_(u'Required points'), null=False)
+    point_num = models.PositiveIntegerField(verbose_name=_(u'Required points'), null=False)
 
     class Meta:
         verbose_name_plural = 'Point Badges'
@@ -124,7 +124,7 @@ class UserAchievement(BaseModel):
     )
 
     category = models.CharField(max_length=10, choices=TYPE_CHOICES, verbose_name=_(u'Type'))
-    points = models.PositiveSmallIntegerField(default=0, null=False)
+    points = models.PositiveIntegerField(default=0, null=False)
 
     @property
     def title(self):
