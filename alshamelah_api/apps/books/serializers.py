@@ -109,7 +109,7 @@ class BookListSerializer(serializers.ModelSerializer):
 
     def get_favorite(self, book):
         if not self.request or not self.request.user.id or not hasattr(self.request.user, 'favorite_books'):
-            return False
+            return None
         favorite = self.request.user.favorite_books.filter(book_id=book.id).first()
         return favorite.id if favorite else None
 
