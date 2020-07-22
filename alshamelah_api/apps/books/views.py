@@ -11,7 +11,7 @@ from pyarabic.araby import strip_tashkeel
 from rest_framework import viewsets, status, views, mixins
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, JSONParser, FormParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
@@ -28,15 +28,16 @@ from .serializers import BookSerializer, BookMarkSerializer, BookPDFSerializer, 
     BookSuggestionSerializer, DownloadBookSerializer, BookSearchSerializer, BookSearchListSerializer, \
     ListenProgressSerializer, UserBookListSerializer, UploadPaperSerializer, PaperListSerializer, SubmitPaperSerializer, \
     UploadThesisSerializer, SubmitThesisSerializer, ThesisListSerializer, UserReviewSerializer, \
-    UserReviewListSerializer, UserBookNoteListSerializer, UserReviewWriteSerializer
+    UserReviewListSerializer, UserBookNoteListSerializer
 from .util import ArabicUtilities
 from ..chatrooms.models import Seminar, Discussion, ChatRoom
 from ..chatrooms.serializers import SeminarListSerializer, DiscussionListSerializer, ChatRoomListSerializer
 from ..core.pagination import CustomLimitOffsetPagination, CustomPageNumberPagination
-from ..points.services import PointsService
 from ..points.models import UserStatistics
+from ..points.services import PointsService
 from ..users.roles import AppPermissions
 from ..users.services import FCMService
+
 
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.filter(approved=True).prefetch_related('category', 'reviews')
@@ -234,7 +235,7 @@ class BookViewSet(viewsets.ModelViewSet):
              enumerate(book.pages) if word in page['text']])
         return Response(data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook])
+    @action(detail=True, methods=['put'], permission_classes=[CanSubmitBook], parser_classes=[JSONParser, FormParser])
     def submit(self, request, pk=None):
         self.partial_update(request, {'pk': pk, })
         book = Book.objects.filter(pk=pk).first()
@@ -257,7 +258,8 @@ class BookViewSet(viewsets.ModelViewSet):
             ListenBook.objects.update_or_create(book_id=pk, user_id=request.user.id)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'], url_path='listen/progress', permission_classes=[CanManageUserData])
+    @action(detail=True, methods=['post'], url_path='listen/progress', permission_classes=[CanManageUserData],
+            parser_classes=[JSONParser, FormParser])
     def listen_progress(self, request, pk=None, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
