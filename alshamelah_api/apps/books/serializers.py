@@ -55,12 +55,13 @@ class BookListSerializer(serializers.ModelSerializer):
     category = CategoryForBookSerializer()
     sub_category = SubCategorySerializer()
     author = AuthorSerializer()
+    user_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Book
         fields = ['id', 'title', 'author', 'category', 'sub_category', 'rating', 'page_count', 'downloads', 'listens',
                   'readers', 'reviews', 'has_audio', 'pdf', 'download_url', 'cover_image', 'description', 'is_favorite',
-                  'favorite']
+                  'favorite', 'user_rating']
 
     @property
     def request(self):
@@ -112,6 +113,16 @@ class BookListSerializer(serializers.ModelSerializer):
             return None
         favorite = self.request.user.favorite_books.filter(book_id=book.id).first()
         return favorite.id if favorite else None
+
+    def get_user_rating(self, book):
+        if not self.request or not self.request.user.id or not hasattr(self.request.user, 'reviews'):
+            return None
+        rating = self.request.user.reviews.filter(book_id=book.id).first()
+        return {
+            'id': rating.id,
+            'rating': rating.rating,
+            'comment': rating.comment
+        } if rating else None
 
 
 class UserBookListSerializer(BookListSerializer):
