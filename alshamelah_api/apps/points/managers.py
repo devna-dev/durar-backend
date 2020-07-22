@@ -4,8 +4,8 @@ from django.db import models, connection
 from django.db.models import Sum, F, FloatField
 
 from .models import Achievement, UserAchievement
-from ..users.models import User
 from ..books.models import ListenBook
+from ..users.models import User
 
 
 class UserStatisticsManager(models.Manager):
@@ -103,7 +103,8 @@ class UserStatisticsManager(models.Manager):
         total_minutes_listened = book_listened.aggregate(
             total_minutes=Sum((F('file_progress__progress') * F('file_progress__audio__duration')) / 100,
                               output_field=FloatField()))
-        data.minutes_listened = total_minutes_listened['total_minutes']
+        data.minutes_listened = total_minutes_listened['total_minutes'] if total_minutes_listened[
+            'total_minutes'] else 0
         data.save()
 
         # ------------------------- achievement checks ----------------------------------

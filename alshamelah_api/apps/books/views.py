@@ -108,8 +108,6 @@ class BookViewSet(viewsets.ModelViewSet):
         book_id = kwargs.get('pk', None)
         if book_id:
             self.book = get_object_or_404(Book, pk=book_id)
-        if self.request.user.id:
-            self.user = self.request.user
         return super(BookViewSet, self).dispatch(request, *args, **kwargs)
 
     def get_serializer_context(self):
@@ -117,10 +115,9 @@ class BookViewSet(viewsets.ModelViewSet):
         Extra context provided to the serializer class.
         """
         context = super(BookViewSet, self).get_serializer_context()
-        if hasattr(self, 'book') and hasattr(self, 'user'):
+        if hasattr(self, 'book'):
             context.update(
-                book=self.book,
-                user=self.user
+                book=self.book
             )
         return context
 
@@ -334,7 +331,7 @@ class NestedBookViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
     def dispatch(self, request, *args, **kwargs):
         book_id = kwargs.get('parent_lookup_book', None)
         self.book = get_object_or_404(Book, pk=book_id)
-        self.user = self.request.user
+        # self.user = self.request.user
         return super(NestedBookViewSet, self).dispatch(request, *args, **kwargs)
 
     def get_serializer_context(self):
@@ -342,10 +339,10 @@ class NestedBookViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
         Extra context provided to the serializer class.
         """
         context = super(NestedBookViewSet, self).get_serializer_context()
-        if hasattr(self, 'book') and hasattr(self, 'user'):
+        if hasattr(self, 'book'):
             context.update(
                 book=self.book,
-                user=self.user
+                user=self.request.user
             )
         return context
 
@@ -399,7 +396,6 @@ class BookReviewViewSet(NestedBookViewSet):
         if self.action in ['destroy', 'update', 'partial_update']:
             return self.queryset.filter(user_id=self.request.user.id, book_id=self.book.id)
         return self.queryset.filter(book_id=self.book.id)
-
 
 
 class CategoryBooksView(views.APIView):
