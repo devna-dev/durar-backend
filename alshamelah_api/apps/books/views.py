@@ -80,7 +80,7 @@ class BookViewSet(viewsets.ModelViewSet):
         if ordering == '-add_date':
             ordering = '-creation_time'
         if ordering in ['pages', '-pages']:
-            ordering = '{desc}page_count'.format(desc='-' if ordering == '-pages' else '')
+            ordering = ordering.replace('pages', 'page') + '_count'
         if ordering == 'downloads':
             return queryset.annotate(download_count=Count('downloads')).order_by(
                 F('download_count').asc(nulls_last=False))
