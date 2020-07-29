@@ -522,14 +522,14 @@ class UserReviewSerializer(UserReviewWriteSerializer):
 
 
 class UserReviewListSerializer(serializers.ModelSerializer):
-    book = BookListSerializer()
+    # book = BookListSerializer()
     user = UserProfileSerializer()
     likes = serializers.SerializerMethodField()
     like_id = serializers.SerializerMethodField()
 
     class Meta:
         model = BookReview
-        fields = ['book', 'user', 'likes', 'id', 'like_id', 'comment', 'creation_time']
+        fields = ['user', 'likes', 'id', 'like_id', 'comment', 'rating', 'creation_time']
 
     def get_likes(self, review):
         return review.likes.count()

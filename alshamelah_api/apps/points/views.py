@@ -13,17 +13,16 @@ class UserPointsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated,)
 
     def list(self, request, *args, **kwargs):
-        points = self.queryset.filter(user_id=request.user.id).values('type').annotate(points=Sum('point_num'))
-        donation = points.filter(type='donation').first()
-        book_approved = points.filter(type='book_approved').first()
-        paper_approved = points.filter(type='paper_approved').first()
-        thesis_approved = points.filter(type='thesis_approved').first()
-        audio_approved = points.filter(type='audio_approved').first()
-        total = (donation['points'] if donation else 0) + \
-                (book_approved['points'] if book_approved else 0) + \
-                (paper_approved['points'] if paper_approved else 0) + \
-                (thesis_approved['points'] if thesis_approved else 0) + \
-                (audio_approved['points'] if audio_approved else 0)
+        points = list(self.queryset.filter(user_id=request.user.id).values('type').annotate(points=Sum('point_num')))
+        donation = next((point['points'] for point in points if points if point['type'] == 'donation'), None)
+        book_approved = next((point['points'] for point in points if point['type'] == 'book_approved'), None)
+        paper_approved = next((point['points'] for point in points if point['type'] == 'paper_approved'), None)
+        thesis_approved = next((point['points'] for point in points if point['type'] == 'thesis_approved'), None)
+        audio_approved = next((point['points'] for point in points if point['type'] == 'audio_approved'), None)
+        total = (donation if donation else 0) + \
+                (paper_approved if paper_approved else 0) + \
+                (thesis_approved if thesis_approved else 0) + \
+                (audio_approved if audio_approved else 0)
         user_achievements = UserAchievement.objects.filter(user_id=request.user.id)
         achievements = UserAchievementSerializer(user_achievements,
                                                  context={'request': request}, many=True)
@@ -31,11 +30,11 @@ class UserPointsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             type__in=list(achievement.type for achievement in user_achievements))
         unfulfilled_achievements = AchievementSerializer(all_achievements, many=True)
         data = {
-            'donation': donation['points'] if donation else 0,
-            'book_approval': book_approved['points'] if book_approved else 0,
-            'paper_approval': paper_approved['points'] if paper_approved else 0,
-            'thesis_approval': thesis_approved['points'] if thesis_approved else 0,
-            'audio_approval': audio_approved['points'] if audio_approved else 0,
+            'donation': donation if donation else 0,
+            'book_approval': book_approved if book_approved else 0,
+            'paper_approval': paper_approved if paper_approved else 0,
+            'thesis_approval': thesis_approved if thesis_approved else 0,
+            'audio_approval': audio_approved if audio_approved else 0,
             'total': total,
             'membership': request.user.membership,
             'badges': achievements.data,
